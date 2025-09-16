@@ -42,7 +42,13 @@ Show more detailed messages. Can be repeated to log even more.
 *--version*::
 Show mkmedia version.
 
-*--save-temp*::
+*--tmp-dir*=_TMPDIR_::
+Use TMPDIR as temporary directory (default: /tmp). +
+Some operations can require a substantial amount of temporary disk space. For example, modifying
+the installation system involves unpacking the Live root file system of the installer - which is typically around 6GB. +
+Use this option if you would otherwise run out of disk space.
+
+*--save-tmp*::
 Keep temporary files.
 
 *--help*::
