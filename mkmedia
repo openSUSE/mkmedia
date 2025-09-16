@@ -17,16 +17,19 @@
   sub new
   {
     my $self = {};
-    my $save_tmp = shift;
+    my $save_tmp = $_[0];
+    my $tmp_dir = $_[1];
 
     bless $self;
+
+    $tmp_dir = "/tmp" if !defined($tmp_dir);
 
     my $x = $0;
     $x =~ s#.*/##;
     $x =~ s/(\s+|"|\\|')/_/;
     $x = 'tmp' if$x eq "";
 
-    my $t = File::Temp::tempdir(abs_path("/tmp") . "/$x.XXXXXXXX", CLEANUP => $save_tmp ? 0 : 1);
+    my $t = File::Temp::tempdir(abs_path($tmp_dir) . "/$x.XXXXXXXX", CLEANUP => $save_tmp ? 0 : 1);
 
     $self->{base} = $t;
 
@@ -315,6 +318,7 @@ my $opt_grub_dir;
 my $opt_grub_efi_dir;
 my $opt_luks;
 my $opt_initrd_options = [];
+my $opt_tmp_dir;
 
 Getopt::Long::Configure("gnu_compat");
 
@@ -408,7 +412,8 @@ GetOptions(
   'mount-iso'        => \$opt_mount_iso,
   'no-mount-iso'     => sub { $opt_mount_iso = 0 },
   'initrd-config=s'  => $opt_initrd_options,
-  'save-temp'        => \$opt_save_temp,
+  'temp-dir|tmp-dir=s' => \$opt_tmp_dir,
+  'save-temp|save-tmp' => \$opt_save_temp,
   'verbose|v'        => sub { $opt_verbose++ },
   'version'          => sub { print "$VERSION\n"; exit 0 },
   'help'             => sub { usage 0 },
@@ -440,6 +445,13 @@ if(@opt_kernel_modules && !@opt_kernel_rpms) {
 }
 
 die "no password\n" if $opt_crypto && $opt_crypto_password eq "";
+
+if(defined $opt_tmp_dir) {
+  die "$opt_tmp_dir: no such directory\n" unless -d $opt_tmp_dir;
+  die "$opt_tmp_dir: directory not readable\n" unless -r _ && -R _;
+  die "$opt_tmp_dir: directory not writable\n" unless -w _ && -W _;
+  die "$opt_tmp_dir: directory not executable\n" unless -X _ && -X _;
+}
 
 $ENV{PATH} = "$LIBEXECDIR/mkmedia:/usr/bin:/bin:/usr/sbin:/sbin";
 
@@ -480,7 +492,9 @@ if($config{sudo}) {
 $opt_sign_key ||= $config{'sign-key'};
 $opt_sign_key_id ||= $config{'sign-key-id'};
 
-my $tmp = Tmp::new($opt_save_temp);
+my $tmp = Tmp::new($opt_save_temp, $opt_tmp_dir);
+
+print "using tmp dir: $tmp->{base}\n" if $opt_save_temp;
 
 # my $tmp_mnt = $tmp->mnt('mnt');
 my $tmp_new = $tmp->dir('new');
@@ -942,7 +956,8 @@ General options:
 
       --verbose                   Show more detailed messages. Can be repeated to log even more.
       --version                   Show mkmedia version.
-      --save-temp                 Keep temporary files.
+      --tmp-dir TMPDIR            Use TMPDIR as temporary directory (default: /tmp).
+      --save-tmp                  Keep temporary files.
       --help                      Write this help text.
 
 Show available repositories:
