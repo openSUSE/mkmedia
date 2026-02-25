@@ -139,7 +139,7 @@ $Data::Dumper::Indent = 1;
 our $VERSION = "0.0";
 our $LIBEXECDIR = "/usr/lib";
 
-my @boot_archs = qw ( x86_64 i386 s390x s390 ia64 aarch64 ppc ppc64 ppc64le );
+my @boot_archs = qw ( x86_64 i386 s390x s390 ia64 aarch64 ppc ppc64 ppc64le riscv64 loongarch64 );
 my $magic_id = "6803f54d-f1f0-4d84-8917-96f9c3c669ab";
 my $magic_sig_id = "7984fc91-a43f-4e45-bf27-6d3aa08b24cf";
 
@@ -153,6 +153,8 @@ sub check_root;
 sub show_progress;
 sub susystem;
 sub fname;
+sub file_name_nocase;
+sub get_arch;
 sub analyze_boot;
 sub build_todo;
 sub new_file;
@@ -245,6 +247,9 @@ sub apply_duds_2;
 sub apply_single_dud;
 sub kernel_module_exists;
 sub run_depmod;
+sub read_s390x_ins;
+sub is_dir;
+sub is_file;
 
 my %config;
 my $sudo;
@@ -319,6 +324,7 @@ my $opt_grub_efi_dir;
 my $opt_luks;
 my $opt_initrd_options = [];
 my $opt_tmp_dir;
+my $opt_dry_run;
 
 Getopt::Long::Configure("gnu_compat");
 
@@ -412,6 +418,7 @@ GetOptions(
   'mount-iso'        => \$opt_mount_iso,
   'no-mount-iso'     => sub { $opt_mount_iso = 0 },
   'initrd-config=s'  => $opt_initrd_options,
+  'dry-run'          => \$opt_dry_run,
   'temp-dir|tmp-dir=s' => \$opt_tmp_dir,
   'save-temp|save-tmp' => \$opt_save_temp,
   'verbose|v'        => sub { $opt_verbose++ },
@@ -696,8 +703,14 @@ if($opt_create || $opt_list_repos) {
     $opt_hybrid_mbr = 1 if !defined($opt_hybrid_mbr) && !defined($opt_hybrid_gpt);
     $opt_hybrid_fs = 'iso' if !defined($opt_hybrid_fs);
   }
-  else {
+  elsif($media_style eq 'rh') {
     # rh
+    $opt_hybrid = 1 if !defined($opt_hybrid);
+    $opt_hybrid_mbr = $opt_hybrid_gpt = 1 if !defined($opt_hybrid_mbr) && !defined($opt_hybrid_gpt);
+    $opt_hybrid_fs = '' if !defined($opt_hybrid_fs);
+  }
+  else {
+    # FIXME: debian - ???
     $opt_hybrid = 1 if !defined($opt_hybrid);
     $opt_hybrid_mbr = $opt_hybrid_gpt = 1 if !defined($opt_hybrid_mbr) && !defined($opt_hybrid_gpt);
     $opt_hybrid_fs = '' if !defined($opt_hybrid_fs);
@@ -709,6 +722,7 @@ if($opt_create || $opt_list_repos) {
   analyze_products \@sources;
   build_filelist \@sources;
   $boot = analyze_boot;
+
   get_initrd_format;
 
   $applied_duds = apply_duds_1;
@@ -817,8 +831,12 @@ if($opt_create || $opt_list_repos) {
   if($media_style eq 'rh') {
     add_instsys_rh;
   }
-  else {
+  elsif($media_style eq 'suse') {
     add_instsys_suse;
+  }
+  else {
+    # FIXME: debian
+    # add_instsys_debian;
   }
 
   prepare_normal;
@@ -839,12 +857,6 @@ if($opt_create || $opt_list_repos) {
 
   sign_content_or_checksums if update_content_or_checksums;
   $todo = build_todo;
-  set_mkisofs_metadata;
-
-  prepare_mkisofs;
-
-  # print "sources = ", Dumper(\@sources);
-  # print "mkisofs = ", Dumper($mkisofs);
 
   if($opt_verbose >= 2) {
     print "analyzed boot config:\n";
@@ -852,6 +864,13 @@ if($opt_create || $opt_list_repos) {
     print "creating boot config:\n";
     print Dumper($todo);
   }
+
+  set_mkisofs_metadata;
+
+  prepare_mkisofs;
+
+  # print "sources = ", Dumper(\@sources);
+  # print "mkisofs = ", Dumper($mkisofs);
 
   if($opt_verbose >= 3) {
     print "mkisofs files:\n";
@@ -863,6 +882,8 @@ if($opt_create || $opt_list_repos) {
     print "mkisofs graft points:\n";
     print Dumper($mkisofs->{grafts});
   }
+
+  exit 0 if $opt_dry_run;
 
   if($two_runs) {
     if($opt_hybrid_fs eq 'iso') {
@@ -893,7 +914,7 @@ if($opt_create || $opt_list_repos) {
     run_isohybrid;
     run_syslinux if $opt_hybrid_fs eq 'fat';
   }
-  run_isozipl if $opt_zipl;
+  run_isozipl $boot if $opt_zipl;
 
   wipe_iso if $opt_no_iso;
 
@@ -1198,6 +1219,31 @@ sub fname
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# file_name_nocase(name)
+#
+# Get file name, matching case-insensitive.
+#
+# - name: file name
+#
+# Returns real file name, matched case-insensitve.
+#
+sub file_name_nocase
+{
+  my $name = $_[0];
+
+  return undef if !defined $name;
+
+  $name = "\L$name";
+
+  for my $n (sort keys %$files) {
+    return $n if $name eq "\L$n";
+  }
+
+  return undef;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # build_filelist(sources)
 #
 # sources is an array_ref containing a list of directories to be scanned and
@@ -1280,102 +1326,224 @@ sub update_filelist
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# analyze_boot()
+# get_arch()
 #
-# Scan sources and determne boot configuration. The result is put into the
-# global $boot var.
+# Return (main) architecture string for media.
+#
+sub get_arch
+{
+  # Note: order matters: if x86_64 and i386 -> report x86_64; if x86_64 and s390x -> report s390x.
+
+  my $efi_archs = { x86_64 => 'x64', i386 => 'ia32', aarch64 => 'aa64', riscv64 => 'riscv64', loongarch64 => 'loongarch64' };
+
+  for my $x ('aarch64', 's390x', 'x86_64', 'i386', 'ppc64', 'ppc64le', 'riscv64', 'loongarch64') {
+    return $x if is_dir("boot/$x");
+    return $x if exists($efi_archs->{$x}) && is_file(file_name_nocase("efi/boot/boot$efi_archs->{$x}.efi"));
+  }
+
+  my $boot_files = {
+    'aarch64' => [ 'boot/grub/arm64-efi' ],
+    'loongarch64' => [ 'boot/grub/loongarch64-efi' ],
+    'ppc64le' => [ 'ppc/bootinfo.txt' ],
+    'riscv64' => [ 'boot/grub/riscv64-efi' ],
+    's390x' => [ 'generic.ins', 'suse.ins', 'boot/d390.ins' ],
+    'x86_64' => [ 'boot/grub/x86_64-efi' ],
+  };
+
+  for my $x (sort keys %$boot_files) {
+    for my $f (@{$boot_files->{$x}}) {
+      return $x if is_dir($f) || is_file($f);
+    }
+  }
+
+  return undef;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# boot = analyze_boot()
+#
+# Scan sources and return boot configuration.
 #
 sub analyze_boot
 {
   my $boot;
 
-  for (@boot_archs) {
-    if(-d fname("boot/$_")) {
-      $boot->{$_} = { base => "boot/$_" };
+  my $main_arch = get_arch;
 
-      $boot->{$_}{initrd} = "boot/$_/loader/initrd" if -f fname("boot/$_/loader/initrd");
-      $boot->{$_}{initrd} = "boot/$_/isolinux/initrd" if -f fname("boot/$_/isolinux/initrd");
-      $boot->{$_}{initrd} = "boot/$_/initrd" if -f fname("boot/$_/initrd");
+  if($main_arch) {
+    print "media architecture: $main_arch\n";
+  }
+  else {
+    die "failed to determine architecture\n";
+  }
 
-      $boot->{$_}{kernel} = "boot/$_/loader/linux" if -f fname("boot/$_/loader/linux");
-      $boot->{$_}{kernel} = "boot/$_/isolinux/linux" if -f fname("boot/$_/isolinux/linux");
-      $boot->{$_}{kernel} = "boot/$_/vmrdr.ikr" if -f fname("boot/$_/vmrdr.ikr");
-      $boot->{$_}{kernel} = "boot/$_/linux" if -f fname("boot/$_/linux");
+  my $efi_dir;
+  $efi_dir = file_name_nocase("EFI/BOOT");
+  $efi_dir = undef if !is_dir($efi_dir);
 
-      if(-f fname("boot/$_/loader/isolinux.bin") && -f fname("boot/$_/loader/isolinux.cfg")) {
-        $boot->{$_}{bl}{isolinux} = { base => "boot/$_/loader", file => "isolinux.bin", arch => $_ };
-      }
-      if(-f fname("boot/$_/isolinux/isolinux.bin") && -f fname("boot/$_/isolinux/isolinux.cfg")) {
-        $boot->{$_}{bl}{isolinux} = { base => "boot/$_/isolinux", file => "isolinux.bin", arch => $_ };
-      }
-      if(-f fname("boot/$_/cd.ikr")) {
-        $boot->{$_}{bl}{ikr} = { base => "boot/$_/cd.ikr", arch => $_ };
-        if(-f fname("boot/$_/suse.ins")) {
-          $boot->{$_}{bl}{ikr}{ins} = "boot/$_/suse.ins";
+  if($media_style eq 'suse') {
+    for (@boot_archs) {
+      next if $_ eq 's390x';
+
+      if(is_dir("boot/$_")) {
+        $boot->{$_} = { base => "boot/$_" };
+
+        $boot->{$_}{initrd} = "boot/$_/loader/initrd" if is_file("boot/$_/loader/initrd");
+        $boot->{$_}{initrd} = "boot/$_/isolinux/initrd" if is_file("boot/$_/isolinux/initrd");
+        $boot->{$_}{initrd} = "boot/$_/initrd" if is_file("boot/$_/initrd");
+
+        $boot->{$_}{kernel} = "boot/$_/loader/linux" if is_file("boot/$_/loader/linux");
+        $boot->{$_}{kernel} = "boot/$_/isolinux/linux" if is_file("boot/$_/isolinux/linux");
+        $boot->{$_}{kernel} = "boot/$_/linux" if is_file("boot/$_/linux");
+
+        if(is_file("boot/$_/loader/isolinux.bin") && is_file("boot/$_/loader/isolinux.cfg")) {
+          $boot->{$_}{bl}{isolinux} = { base => "boot/$_/loader", file => "isolinux.bin", config => "boot/$_/loader/isolinux.cfg", arch => $_ };
+        }
+        if(is_file("boot/$_/isolinux/isolinux.bin") && is_file("boot/$_/isolinux/isolinux.cfg")) {
+          $boot->{$_}{bl}{isolinux} = { base => "boot/$_/isolinux", file => "isolinux.bin", config => "boot/$_/isolinux/isolinux.cfg", arch => $_ };
+        }
+
+        if(is_file("boot/$_/grub2-efi/cd.img")) {
+          $boot->{$_}{bl}{grub2} = { base => "boot/$_/grub2-efi", file => "cd.img", arch => $_ };
+        }
+        if(is_file("boot/$_/grub2/cd.img")) {
+          $boot->{$_}{bl}{grub2} = { base => "boot/$_/grub2", file => "cd.img", arch => $_ };
+        }
+        if(is_file("boot/$_/loader/eltorito.img")) {
+          $boot->{$_}{bl}{grub2} = { base => "boot/$_/loader", file => "eltorito.img", config => "boot/grub2/grub.cfg", arch => $_ };
+          if(is_file("boot/$_/loader/boot_hybrid.img")) {
+            $boot->{$_}{bl}{grub2}{hybrid_mbr} = "boot/$_/loader/boot_hybrid.img";
+          }
+        }
+        if(is_file("boot/$_/grub2-ieee1275/core.elf")) {
+          $boot->{$_}{bl}{grub2} = { base => "boot/$_/grub2-ieee1275", file => "core.elf", arch => $_ };
+        }
+        if($efi_dir || is_file("boot/$_/loader/efiboot.img") && $media_variant ne 'install') {
+          $boot->{$_}{bl}{efi} = { base => "boot/$_/loader/efiboot.img", arch => $_ };
+        }
+        if(($efi_dir || is_file("boot/$_/efi")) && $media_variant eq 'install') {
+          $boot->{$_}{bl}{efi} = { base => "boot/$_/efi", config => "$efi_dir/grub.cfg", arch => $_ };
+        }
+        if(is_file("ppc/bootinfo.txt")) {
+          $boot->{$_}{bl}{chrp} = { base => "ppc", arch => $_ };
+        }
+        if(is_file("boot/grub2/grub.cfg")) {
+          if(!$boot->{$_}{bl}{grub2}) {
+            $boot->{$_}{bl}{grub2} = { config => "boot/grub2/grub.cfg", arch => $_ };
+          }
+          else {
+            $boot->{$_}{bl}{grub2}{config} ||= "boot/grub2/grub.cfg";
+          }
         }
       }
-      if(-f fname("boot/$_/grub2-efi/cd.img")) {
-        $boot->{$_}{bl}{grub2} = { base => "boot/$_/grub2-efi", file => "cd.img", arch => $_ };
+    }
+  }
+
+  if($main_arch eq 's390x') {
+    my $parmfile;
+    $parmfile = "images/cdboot.prm" if is_file("images/cdboot.prm");
+    $parmfile = "boot/$main_arch/parmfile" if is_file("boot/$main_arch/parmfile");
+    $parmfile = "boot/$main_arch/loader/parmfile" if is_file("boot/$main_arch/loader/parmfile");
+
+    if($parmfile) {
+      my $z_dir = $parmfile;
+      $z_dir =~ s#/[^/]+$##;
+
+      $boot->{$main_arch} = { base => $z_dir };
+
+      $boot->{$main_arch}{kernel} = "$z_dir/vmrdr.ikr" if is_file("$z_dir/vmrdr.ikr");
+      $boot->{$main_arch}{initrd} = "$z_dir/initrd.img" if is_file("$z_dir/initrd.img");
+      $boot->{$main_arch}{kernel} = "$z_dir/kernel.img" if is_file("$z_dir/kernel.img");
+      $boot->{$main_arch}{initrd} = "$z_dir/initrd" if is_file("$z_dir/initrd");
+      $boot->{$main_arch}{kernel} = "$z_dir/linux" if is_file("$z_dir/linux");
+
+      $boot->{$main_arch}{parmfile} = $parmfile;
+      $boot->{$main_arch}{zipl_map} = $boot->{$main_arch}{kernel};
+      $boot->{$main_arch}{zipl_map} =~ s#/[^/]*$#/zipl.map#;
+      $boot->{$main_arch}{bl}{ikr} = { base => $z_dir, image_name => "$z_dir/cdboot.img", arch => $main_arch } if is_file("$z_dir/cdboot.img");
+      $boot->{$main_arch}{bl}{ikr} = { base => $z_dir, image_name => "$z_dir/cd.ikr", arch => $main_arch } if is_file("$z_dir/cd.ikr");
+      if($boot->{$main_arch}{bl}{ikr}) {
+        $boot->{$main_arch}{bl}{ikr}{addrsize} = "$z_dir/initrd.addrsize" if is_file("$z_dir/initrd.addrsize");
+        $boot->{$main_arch}{bl}{ikr}{off} = "$z_dir/initrd.off" if is_file("$z_dir/initrd.off");
+        $boot->{$main_arch}{bl}{ikr}{siz} = "$z_dir/initrd.siz" if is_file("$z_dir/initrd.siz");
+        $boot->{$main_arch}{bl}{ikr}{ins} = "generic.ins" if is_file("generic.ins");
+        $boot->{$main_arch}{bl}{ikr}{ins} = "suse.ins" if is_file("suse.ins");
+        $boot->{$main_arch}{bl}{ikr}{ins} = "$z_dir/suse.ins" if is_file("$z_dir/suse.ins");
+        $boot->{$main_arch}{bl}{ikr}{layout} = read_s390x_ins $boot->{$main_arch}{bl}{ikr}{ins};
+        $boot->{$main_arch}{bl}{ikr}{config} = $parmfile;
       }
-      if(-f fname("boot/$_/grub2/cd.img")) {
-        $boot->{$_}{bl}{grub2} = { base => "boot/$_/grub2", file => "cd.img", arch => $_ };
+    }
+  }
+
+  if(!$boot->{$main_arch}) {
+    if($main_arch eq 'ppc64le') {
+      if(is_file("ppc/bootinfo.txt")) {
+        $boot->{$main_arch} = { base => "ppc/ppc64" };
+        $boot->{$main_arch}{bl}{chrp} = { base => "ppc", arch => $main_arch };
+        $boot->{$main_arch}{initrd} = "ppc/ppc64/initrd.img" if is_file("ppc/ppc64/initrd.img");
+        $boot->{$main_arch}{kernel} = "ppc/ppc64/vmlinuz" if is_file("ppc/ppc64/vmlinuz");
       }
-      if(-f fname("boot/$_/loader/eltorito.img")) {
-        $boot->{$_}{bl}{grub2} = { base => "boot/$_/loader", file => "eltorito.img", config => "boot/grub2/grub.cfg", arch => $_ };
-        $boot->{$_}{bl}{efi} = { base => "boot/$_/loader/efiboot.img", arch => $_ };
-        if(-f fname("boot/$_/loader/boot_hybrid.img")) {
-          $hybrid_mbr_code = fname("boot/$_/loader/boot_hybrid.img");
-          $hybrid_grub = 1;
-        }
-      }
-      if(-f fname("boot/$_/grub2-ieee1275/core.elf")) {
-        $boot->{$_}{bl}{grub2} = { base => "boot/$_/grub2-ieee1275", file => "core.elf", arch => $_ };
-      }
-      if(-f fname("boot/$_/efi")) {
-        $boot->{$_}{bl}{efi} = { base => "boot/$_/efi", arch => $_ };
-      }
-      if(-f fname("ppc/bootinfo.txt")) {
-        $boot->{$_}{bl}{chrp} = { base => "ppc", arch => $_ };
+      if(is_file("boot/grub/powerpc-ieee1275/core.elf")) {
+        $boot->{$main_arch}{bl}{grub2} = { base => "boot/grub/powerpc-ieee1275", config => "boot/grub/grub.cfg", file => "core.elf", arch => $main_arch };
       }
     }
 
-    if(-f fname("suseboot/linux64")) {
+    if($main_arch eq 'ppc64' && is_file("suseboot/linux64")) {
       $boot->{ppc64} = { base => "suseboot", arch => "ppc64", kernel => "suseboot/linux64"};
-      $boot->{ppc64}{initrd} = "suseboot/initrd64" if -f fname("suseboot/initrd64");
-      if(-f fname("ppc/bootinfo.txt")) {
+      $boot->{ppc64}{initrd} = "suseboot/initrd64" if is_file("suseboot/initrd64");
+      if(is_file("ppc/bootinfo.txt")) {
         $boot->{ppc64}{bl}{yaboot} = { base => "suseboot", file => "suseboot/yaboot.ibm", arch => "ppc64" };
         $boot->{ppc64}{bl}{chrp} = { base => "ppc", arch => "ppc64" };
       }
     }
-  }
 
-  if (-d fname("isolinux") && -f fname("isolinux/isolinux.bin") &&  -f fname("isolinux/isolinux.cfg")) {
-    $_ = "x86_64";
-    $boot->{$_} = { base => "isolinux" };
-    $boot->{$_}{initrd} = "isolinux/initrd.img" if -f fname("isolinux/initrd.img");
-    $boot->{$_}{kernel} = "isolinux/vmlinuz" if -f fname("isolinux/vmlinuz");
+    if($main_arch eq 'x86_64') {
+      if(is_dir("isolinux") && is_file("isolinux/isolinux.bin") && is_file("isolinux/isolinux.cfg")) {
+        $boot->{$main_arch} = { base => "isolinux" };
+        $boot->{$main_arch}{initrd} = "install.amd/initrd.gz" if is_file("install.amd/initrd.gz");
+        $boot->{$main_arch}{kernel} = "install.amd/vmlinuz" if is_file("install.amd/vmlinuz");
+        $boot->{$main_arch}{initrd} = "isolinux/initrd.img" if is_file("isolinux/initrd.img");
+        $boot->{$main_arch}{kernel} = "isolinux/vmlinuz" if is_file("isolinux/vmlinuz");
 
-    # copy of original initrd; keep in sync on final image
-    $boot->{$_}{initrd_alt} = "images/pxeboot/initrd.img" if -f fname("images/pxeboot/initrd.img");
-    $boot->{$_}{kernel_alt} = "images/pxeboot/vmlinuz" if -f fname("images/pxeboot/vmlinuz");
+        # copy of original initrd; keep in sync on final image
+        $boot->{$main_arch}{initrd_alt} = "images/pxeboot/initrd.img" if is_file("images/pxeboot/initrd.img");
+        $boot->{$main_arch}{kernel_alt} = "images/pxeboot/vmlinuz" if is_file("images/pxeboot/vmlinuz");
 
-    $boot->{$_}{bl}{isolinux} = { base => "isolinux", file => "isolinux.bin", arch => $_ };
-    if(-f fname("images/efiboot.img")) {
-      $boot->{$_}{bl}{efi} = { base => "images/efiboot.img", arch => $_ };
+        $boot->{$main_arch}{bl}{isolinux} = { base => "isolinux", file => "isolinux.bin", config => "isolinux/isolinux.cfg", arch => $main_arch };
+        if($media_style eq 'debian') {
+          if($efi_dir || is_file("boot/grub/efi.img")) {
+            $boot->{$main_arch}{bl}{efi} = { base => "boot/grub/efi.img", arch => $main_arch };
+          }
+        }
+        else {
+          if($efi_dir || is_file("images/efiboot.img")) {
+            $boot->{$main_arch}{bl}{efi} = { base => "images/efiboot.img", config => "$efi_dir/grub.cfg", arch => $main_arch };
+          }
+        }
+      }
+      elsif(is_file("images/pxeboot/initrd.img") && is_dir("boot/grub2/i386-pc")) {
+        $boot->{$main_arch} = { base => "images" };
+        $boot->{$main_arch}{bl}{grub2} = { base => "images", file => "eltorito.img", config => "boot/grub2/grub.cfg", arch => $main_arch };
+        if(is_file("boot/grub2/i386-pc/boot_hybrid.img")) {
+          $boot->{$main_arch}{bl}{grub2}{hybrid_mbr} = "boot/grub2/i386-pc/boot_hybrid.img";
+        }
+        if($efi_dir || is_file("images/efiboot.img")) {
+          $boot->{$main_arch}{bl}{efi} = { base => "images/efiboot.img", config => "$efi_dir/grub.cfg", arch => $main_arch };
+        }
+        $boot->{$main_arch}{initrd} = "images/pxeboot/initrd.img" if is_file("images/pxeboot/initrd.img");
+        $boot->{$main_arch}{kernel} = "images/pxeboot/vmlinuz" if is_file("images/pxeboot/vmlinuz");
+      }
     }
-  }
 
-  if(-f fname("images/pxeboot/initrd.img") && -d fname("boot/grub2/i386-pc") && -f fname("images/eltorito.img")) {
-    $_ = "x86_64";
-    $boot->{$_} = { base => "images" };
-    $boot->{$_}{bl}{grub2} = { base => "images", file => "eltorito.img", config => "boot/grub2/grub.cfg", arch => $_ };
-    if(-f fname("boot/grub2/i386-pc/boot_hybrid.img")) {
-      $hybrid_mbr_code = fname("boot/grub2/i386-pc/boot_hybrid.img");
-      $hybrid_grub = 1;
+    if(($main_arch eq 'aarch64' || $main_arch eq 'riscv64' || $main_arch eq 'loongarch64') && $efi_dir) {
+      if(is_file("images/pxeboot/initrd.img")) {
+        $boot->{$main_arch} = { base => "images" };
+        $boot->{$main_arch}{bl}{efi} = { base => "images/efiboot.img", config => "$efi_dir/grub.cfg", arch => $main_arch };
+        $boot->{$main_arch}{initrd} = "images/pxeboot/initrd.img" if is_file("images/pxeboot/initrd.img");
+        $boot->{$main_arch}{kernel} = "images/pxeboot/vmlinuz" if is_file("images/pxeboot/vmlinuz");
+      }
     }
-    $boot->{$_}{bl}{efi} = { base => "images/efiboot.img", arch => $_ };
-    $boot->{$_}{initrd} = "images/pxeboot/initrd.img" if -f fname("images/pxeboot/initrd.img");
-    $boot->{$_}{kernel} = "images/pxeboot/vmlinuz" if -f fname("images/pxeboot/vmlinuz");
   }
 
   # sanitize; kiwi creates stray directories
@@ -1383,34 +1551,8 @@ sub analyze_boot
     delete $boot->{$_} unless $boot->{$_}{kernel} && $boot->{$_}{initrd};
   }
 
-  if(-d fname("EFI/BOOT")) {
-    $boot->{efi} = { base => "EFI/BOOT" };
-
-    # Ensure there will be a UEFI boot image if it is currently missing,
-    # guessing its name if necessary.
-    #
-    # This is for media where the UEFI image is 'hidden' in the file system and
-    # cannot be accessed.
-    #
-    # The image will be auto-generated based on the content of the 'EFI' directory.
-
-    for my $arch (@boot_archs) {
-      next unless $boot->{$arch};
-      next if $boot->{$arch}{bl} && $boot->{$arch}{bl}{efi};
-      next unless $arch eq 'x86_64' || $arch eq 'i386' || $arch eq 'aarch64';
-      next unless -d fname("boot/$arch");
-      if($media_variant ne 'install') {
-        next unless -d fname("boot/$arch/loader");
-        $boot->{$arch}{bl}{efi} = { base => "boot/$arch/loader/efiboot.img", arch => $arch };
-        if(-f fname("boot/$arch/loader/boot_hybrid.img")) {
-          $hybrid_mbr_code = fname("boot/$arch/loader/boot_hybrid.img");
-          $hybrid_grub = 1;
-        }
-      }
-      else {
-        $boot->{$arch}{bl}{efi} = { base => "boot/$arch/efi", arch => $arch };
-      }
-    }
+  if($efi_dir) {
+    $boot->{efi} = { base => $efi_dir };
   }
 
   return $boot;
@@ -1439,6 +1581,7 @@ sub build_todo
     if(
       $boot->{$_}{bl} &&
       $boot->{$_}{bl}{grub2} &&
+      $boot->{$_}{bl}{grub2}{base} &&
       !$boot->{$_}{bl}{chrp} &&
       (!$opt_loader || $opt_loader eq "grub")
     ) {
@@ -1467,8 +1610,8 @@ sub build_todo
     if($_ eq 's390x') {
       $opt_no_mbr_code = 1 if !defined $opt_no_mbr_code;
       $opt_zipl = 1 if !defined $opt_zipl;
-      if($opt_boot_options) {
-        my $f = copy_or_new_file "boot/s390x/parmfile";
+      if($opt_boot_options && $boot->{s390x}{parmfile}) {
+        my $f = copy_or_new_file $boot->{s390x}{parmfile};
         my $boot_opts;
         if(open my $fd, $f) {
           local $/;
@@ -1483,11 +1626,13 @@ sub build_todo
         }
       }
       if($opt_zipl) {
-        if(!fname("boot/s390x/zipl.map")) {
+        my $zipl_map = $boot->{s390x}{zipl_map};
+        my $zipl_map_dirs = $zipl_map;
+        $zipl_map_dirs =~ s#/[^/]*$##;
+        if(!fname($zipl_map)) {
           # add zipl map file, if necessary
-          mkdir "$tmp_new/boot", 0755;
-          mkdir "$tmp_new/boot/s390x", 0755;
-          if(open my $f, ">$tmp_new/boot/s390x/zipl.map") {
+          File::Path::make_path "$tmp_new/$zipl_map_dirs";
+          if(open my $f, ">$tmp_new/$zipl_map") {
             syswrite $f, ("\x00" x 0x4000);	# 16k should be enough
             close $f;
           }
@@ -1503,6 +1648,7 @@ sub build_todo
   # chrp: just ensure we get a proper partition table
   for (sort keys %$boot) {
     if($boot->{$_}{bl} && $boot->{$_}{bl}{chrp}) {
+      push @$todo, { chrp => { } };
       print "CHRP bootable ($_)\n";
       $hybrid_part_type = 0x96;
       $opt_hybrid = 1;
@@ -1627,29 +1773,34 @@ sub prepare_mkisofs
   $mkisofs->{options} .= " -publisher '" . substr($opt_vendor, 0, 128) . "'";
   $mkisofs->{options} .= " -J -joliet-long" if $opt_joliet;
 
+  my $boot_catalog;
+  my $boot_catalog_efi;
+
   # special loader options
   for (@$todo) {
     my $t = (keys %$_)[0];
 
     if($t eq 'eltorito') {
       $has_el_torito = 1;
+      $boot_catalog = "$_->{$t}{base}";
       copy_file "$_->{$t}{base}/$_->{$t}{file}";
-      push @{$mkisofs->{sort}}, "$tmp_new/$_->{$t}{base}/boot.catalog 4";
-      # push @{$mkisofs->{sort}}, fname("$_->{$t}{base}/$_->{$t}{file}") . " 3";
       push @{$mkisofs->{sort}}, "$tmp_new/$_->{$t}{base}/$_->{$t}{file} 3";
-      # push @{$mkisofs->{sort}}, "$_->{$t}{base}/$_->{$t}{file} 3";
       push @{$mkisofs->{sort}}, "$tmp_new/$_->{$t}{base} 1";
       $mkisofs->{options} .=
         " -no-emul-boot -boot-load-size 4 -boot-info-table" .
-        " -b $_->{$t}{base}/$_->{$t}{file} -c $_->{$t}{base}/boot.catalog" .
-        " -hide $_->{$t}{base}/boot.catalog";
-      $mkisofs->{options} .=
-        " -hide-joliet $_->{$t}{base}/boot.catalog" if $opt_joliet;
+        " -b $_->{$t}{base}/$_->{$t}{file}";
       print "El-Torito legacy bootable ($_->{$t}{arch})\n";
       push @$iso_catalog, "Legacy ($_->{$t}{arch})";
+      if($_->{$t}{hybrid_mbr}) {
+        $hybrid_mbr_code = fname($_->{$t}{hybrid_mbr});
+        $hybrid_grub = 1;
+      }
     }
     elsif($opt_efi && $t eq 'efi') {
       $has_efi = 1;
+      $boot_catalog_efi = "$_->{$t}{base}";
+      $boot_catalog_efi =~ s#/[^/]+$##;
+
       my $efi_file = $_->{$t}{base};
       my $f = fname($efi_file);
 
@@ -1679,15 +1830,29 @@ sub prepare_mkisofs
     }
     elsif($t eq 'ikr') {
       if($_->{$t}{ins}) {
-        # need to create base
-        create_cd_ikr($_->{$t}{base}, $_->{$t}{ins});
+        # need to recreate boot image
+        create_cd_ikr($boot, $_->{$t}, $_->{$t}{image_name}, $_->{$t}{ins});
       }
       $mkisofs->{options} .=
-        " -eltorito-alt-boot -no-emul-boot -boot-load-size 1 -b $_->{$t}{base}";
+        " -eltorito-alt-boot -no-emul-boot -boot-load-size 1 -b $_->{$t}{image_name}";
       print "El-Torito legacy bootable ($_->{$t}{arch})\n";
       push @$iso_catalog, "Legacy ($_->{$t}{arch})";
       $mkisofs->{fix_catalog} = $iso_catalog;
+
+      $boot_catalog ||= "$_->{$t}{base}";
     }
+    elsif($t eq 'chrp') {
+      # nothing to do
+    }
+  }
+
+  $boot_catalog ||= $boot_catalog_efi;
+
+  if($boot_catalog) {
+    $boot_catalog .= "/boot.catalog";
+    push @{$mkisofs->{sort}}, "$tmp_new/$boot_catalog 4";
+    $mkisofs->{options} .= " -c $boot_catalog -hide $boot_catalog";
+    $mkisofs->{options} .= " -hide-joliet $boot_catalog" if $opt_joliet;
   }
 
   my $sf = copy_or_new_file "glump";
@@ -2113,16 +2278,40 @@ sub run_syslinux
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# run_isozipl()
+# run_isozipl(boot_config)
 #
 # Make iso image zipl bootable.
 #
 sub run_isozipl
 {
+  my $boot_config = $_[0];
   my $opt;
   my $ok;
 
-  $opt = " --options '$opt_boot_options'" if $opt_boot_options;
+  die "error: no s390x boot config identified\n" if !$boot_config->{s390x};
+
+  my $kernel = $boot_config->{s390x}{kernel};
+  my $initrd = $boot_config->{s390x}{initrd};
+  my $parmfile = $boot_config->{s390x}{parmfile};
+  my $map = $boot_config->{s390x}{zipl_map};
+
+  die "error: s390x boot config: no kernel\n" if !$kernel;
+  die "error: s390x boot config: no initrd\n" if !$initrd;
+
+  $opt = " --kernel $kernel --initrd $initrd --map $map";
+
+  my $boot_opts = $opt_boot_options;
+
+  if($parmfile) {
+    $opt .= " --parm $parmfile";
+  }
+  else {
+    $boot_opts .= "";
+  }
+
+  $opt .= " --options '$opt_boot_options'" if defined $boot_opts;
+
+  $opt .= " --verbose" if $opt_verbose >= 2;
 
   my $cmd = "isozipl$opt '$iso_file'";
 
@@ -2215,12 +2404,16 @@ sub isols
     # cf. https://sourceforge.net/p/cdrtools/mailman/message/35173024
     s/^\s*\d+\s+//;
 
-    if(/^(.)(.*)\s\[\s*(\d+)(\s+\d+)?\]\s+(.*?)\s*$/) {
+    # note: file start can be negative for zero-size files
+
+    if(/^(.)(.*)\s\[\s*(-?\d+)(\s+\d+)?\]\s+(.*?)\s*$/) {
       my $type = $1;
       my @x = split ' ', $2;
+      my $start = $3 + 0;
+      $start = 0 if $start < 0;
       $type = ' ' if $type eq '-';
       if($5 ne '.' && $5 ne '..') {
-        push @$files, { name => "$dir$5", type => $type, start => $3 + 0, size => $x[4] };
+        push @$files, { name => "$dir$5", type => $type, start => $start, size => $x[4] };
       }
     }
   }
@@ -2722,7 +2915,10 @@ sub add_instsys_suse
   my $instsys_fname;
   my $rescue_location;
   my $rescue_fname;
-  my $has_liveos;
+
+  if(@opt_instsys && $media_variant eq 'selfinstall') {
+    die "modifying root file system on selfinstall images not suported\n";
+  }
 
   if($x->{initrd} =~ m#(boot/[^/]+)/#) {
     $instsys_location = "$1/root";
@@ -2735,8 +2931,6 @@ sub add_instsys_suse
   if(@opt_instsys && !$instsys_fname) {
     $instsys_location = "LiveOS/squashfs.img";
     $instsys_fname = fname $instsys_location;
-
-    $has_liveos = 1 if $instsys_fname;
   }
 
   if(@opt_instsys && !$instsys_fname) {
@@ -2745,6 +2939,13 @@ sub add_instsys_suse
 
   if(@opt_rescue && !$rescue_fname) {
     die "no rescue file system on media found\n";
+  }
+
+  # Determine whether this is just a squashfs image or an ext4 image
+  # (with name LiveOS/rootfs.img) inside a squashfs image.
+  my $has_liveos;
+  for (`unsquashfs -ls $instsys_fname 2>/dev/null`) {
+    $has_liveos = 1, last if m#squashfs-root/LiveOS#;
   }
 
   if(@opt_instsys) {
@@ -2775,6 +2976,11 @@ sub add_instsys_rh
 
   my $instsys_location = "images/install.img";
   my $instsys_fname = fname $instsys_location;
+
+  if(!$instsys_fname) {
+    $instsys_location = "LiveOS/squashfs.img";
+    $instsys_fname = fname $instsys_location;
+  }
 
   die "no root file system on media found\n" if !$instsys_fname;
 
@@ -2849,7 +3055,7 @@ sub add_instsys_live
 
   my $image_fname = fname $image_location;
 
-  print "Identified Live system: $image_location\n";
+  print "identified Live system: $image_location\n";
 
   check_root "Sorry, can't update Live root file system; you need root privileges.";
 
@@ -3159,6 +3365,9 @@ sub get_initrd_format
       $f = 'cat';
     }
   }
+  else {
+    die "no initrd identified\n";
+  }
 
   print "initrd compression type: $f\n" if $opt_verbose >= 1;
 
@@ -3230,7 +3439,7 @@ sub extract_installkeys
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# create_cd_ikr()
+# create_cd_ikr($boot_config, $boot_todo)
 #
 # Needed to handle s390x systems.
 #
@@ -3238,69 +3447,69 @@ sub create_cd_ikr
 {
   local $_;
 
-  my $ikr = $_[0];
-  my $ins = $_[1];
+  my $boot_config = $_[0];
+  my $boot_todo = $_[1];
+  my $ikr = $_[2];
+  my $ins = $_[3];
 
-  my $src = $ins;
-  $src =~ s#/[^/]*$##;
+  my $boot_ikr = $boot_config->{s390x}{bl}{ikr};
 
-  my $dst = $ikr;
-  $dst =~ s#/[^/]*$##;
+  my $src = $boot_todo->{base};
 
-  my $initrd_name = "initrd";
-  my $initrd_siz_name = "${initrd_name}.siz";
-  my $initrd_off_name = "${initrd_name}.off";
+  my $layout = $boot_ikr->{layout};
 
-  my $new_initrd_siz = copy_or_new_file "$src/$initrd_siz_name";
-  if(open my $f, ">", $new_initrd_siz) {
-    syswrite $f, pack("N", -s fname("$src/$initrd_name"));
-    close $f;
-  }
+  die "$ins: nothing to do?\n" if !$layout;
 
-  my @layout;
+  my $initrd_entry;
 
-  my $off_layout;
-
-  if(open my $s, fname($ins)) {
-    while(<$s>) {
-      next if /^\s*\*/;
-      push @layout, { name => "$src/$1", file => fname("$src/$1"), ofs => oct($2) } if /^\s*(\S+)\s+(\S+)/;
-      $off_layout = $layout[-1] if $1 eq $initrd_off_name;
+  for my $entry (@$layout) {
+    if($entry->{name} eq $boot_config->{s390x}{initrd}) {
+      $initrd_entry = $entry;
+      last;
     }
-    close $s;
   }
 
-  die "$ins: nothing to do?\n" if !@layout;
+  die "$ins: initrd not found\n" if !$initrd_entry;
 
-  # create initrd offset entry, if it shows up in layout file
-  if($off_layout) {
-    for (@layout) {
-      my $fname = $_->{file};
-      if($fname =~ m#/${initrd_name}$#) {
-        my $ofs = $_->{ofs};
-        my $new_initrd_ofs = copy_or_new_file "$src/$initrd_off_name";
-        if(open my $f, ">", $new_initrd_ofs) {
-          syswrite $f, pack("N", $ofs);
-          close $f;
-        }
-        $off_layout->{file} = fname($off_layout->{name});
-
-        last;
+  for my $entry (@$layout) {
+    if($entry->{name} eq $boot_ikr->{siz}) {
+      my $f = copy_or_new_file $boot_ikr->{siz};
+      if(open my $fd, ">", $f) {
+        syswrite $fd, pack("L>", -s fname($initrd_entry->{name}));
+        close $f;
       }
+      next;
+    }
+    if($entry->{name} eq $boot_ikr->{off}) {
+      my $f = copy_or_new_file $boot_ikr->{off};
+      if(open my $fd, ">", $f) {
+        syswrite $fd, pack("L>", $initrd_entry->{ofs});
+        close $f;
+      }
+      next;
+    }
+    if($entry->{name} eq $boot_ikr->{addrsize}) {
+      my $f = copy_or_new_file $boot_ikr->{addrsize};
+      if(open my $fd, ">", $f) {
+        syswrite $fd, pack("Q>", $initrd_entry->{ofs});
+        syswrite $fd, pack("Q>", -s fname($initrd_entry->{name}));
+        close $f;
+      }
+      next;
     }
   }
 
   my $new_ikr = copy_or_new_file $ikr;
 
   if(open my $d, ">", $new_ikr) {
-    for (@layout) {
-      my $fname = $_->{file};
+    for my $entry (@$layout) {
+      my $fname = fname($entry->{name});
       my $is_parmfile;
-      $is_parmfile = 1 if $fname =~ m#/parmfile$#;
-      if(open my $f, $fname) {
-        sysread $f, my $buf, -s($f);
-        close $f;
-        sysseek $d, $_->{ofs}, 0;
+      $is_parmfile = 1 if $entry->{name} =~ m#(/parmfile|\.prm)$#;
+      if(open my $fd, $fname) {
+        sysread $fd, my $buf, -s($fd);
+        close $fd;
+        sysseek $d, $entry->{ofs}, 0;
         if($is_parmfile) {
           # write at least 1 block
           my $pad = 0x200 - length($buf);
@@ -3312,7 +3521,7 @@ sub create_cd_ikr
         # print "$fname: $_->{ofs} ", length($buf), "\n";
       }
       else {
-        die "$_->{name}: $!\n";
+        die "$entry->{name}: $!\n";
       }
     }
 
@@ -3720,7 +3929,7 @@ sub prepare_micro
 {
   exclude_files [
     (map { "suse/$_" } @boot_archs, "i586", "noarch"),
-    "(aarch64|ppc64le|s390x|x86_64)", "src", "nosrc", "noarch",
+    "(aarch64|loongarch64|ppc64le|riscv64|s390x|x86_64)", "src", "nosrc", "noarch",
     "docu",
     "ls-lR\\.gz",
     "INDEX\\.gz",
@@ -3774,7 +3983,7 @@ sub prepare_nano
     "license\\.tar\\.gz",
     "(|.*/)directory\\.yast",
     "suse",
-    "(aarch64|ppc64le|s390x|x86_64)",
+    "(aarch64|loongarch64|ppc64le|riscv64|s390x|x86_64)",
     "repodata",
     "images/install.img",
     # keep LiveOS dir, so we still know this is a Live medium
@@ -3892,24 +4101,28 @@ sub set_mkisofs_metadata
 
   my $vol_id_from_config;
 
-  if(open my $f, "<", fname("boot/grub2/grub.cfg")) {
-    while(<$f>) {
-      if(/\sroot=live:CDLABEL=(\S+)/) {
-        $vol_id_from_config = trim_volume_id $1;
-        last;
+  # check all boot config files for interesting stuff
+  for my $boot_entry (sort keys %$boot) {
+    my $bl = $boot->{$boot_entry}{bl};
+    next unless $bl;
+    for my $boot_cfg (sort keys %$bl) {
+      my $cfg_name = $bl->{$boot_cfg}{config};
+      next unless $cfg_name;
+      if(open my $f, "<", fname($cfg_name)) {
+        print "reading config file: $cfg_name\n" if $opt_verbose >= 2;
+        while(<$f>) {
+          if(/\sroot=(?:live|install):CDLABEL=(\S+)/) {
+            $vol_id_from_config = trim_volume_id $1;
+            last;
+          }
+          if(/(?:append|linux|^).* inst.stage2=hd:LABEL=(\S+)/) {
+            $vol_id_from_config = trim_volume_id $1;
+            last;
+          }
+        }
+        close $f;
       }
     }
-    close $f;
-  }
-
-  if(open my $f, "<", fname("isolinux/isolinux.cfg")) {
-    while(<$f>) {
-      if(/append .* inst.stage2=hd:LABEL=(\S+)/) {
-        $vol_id_from_config = trim_volume_id $1;
-        last;
-      }
-    }
-    close $f;
   }
 
   print "volume id (boot config): $vol_id_from_config\n" if $vol_id_from_config && $opt_verbose >= 1;
@@ -6163,7 +6376,7 @@ sub wipe_iso
 #
 # - sources: array_ref containing a list of directories
 #
-# Look at sources and determine media style (suse vs. rh).
+# Look at sources and determine media style (debian, rh, suse).
 #
 # Assume rh style if there's an '/isolinux' dir or a '.discinfo' file or
 # there are '<FOO>/Packages' subdirectories.
@@ -6174,7 +6387,11 @@ sub get_media_style
   my $style = 'suse';
 
   for my $s (@$src) {
-    if(-f "$s->{dir}/.discinfo" || -f "$s->{dir}/Fedora-Legal-README.txt" ) {
+    if(-f("$s->{dir}/.disk/info") ) {
+      $style = 'debian';
+      last;
+    }
+    if(-f("$s->{dir}/.discinfo") || -f("$s->{dir}/Fedora-Legal-README.txt") ) {
       $style = 'rh';
       last;
     }
@@ -6205,11 +6422,11 @@ sub get_media_variant
   my $variant = 'install';
 
   for my $s (@$src) {
-    if(-d "$s->{dir}/LiveOS") {
+    if(-d("$s->{dir}/LiveOS") || -d("$s->{dir}/live")) {
       $variant = 'live';
       last;
     }
-    if(-f "$s->{dir}/config.isoclient") {
+    if(-f("$s->{dir}/config.isoclient")) {
       $variant = 'selfinstall';
       last;
     }
@@ -7529,4 +7746,44 @@ sub run_depmod
     chomp $log;
     die "$log\nError: depmod failed\n";
   }
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# laylout = read_s390x_ins(ins_file)
+#
+sub read_s390x_ins
+{
+  my $ins = $_[0];
+  local $_;
+
+  my $layout;
+
+  return $layout if !defined $ins;
+
+  my $base = $ins;
+  $base = "" if $base !~ s#/[^/]*$#/#;
+
+  if(open my $s, fname($ins)) {
+    while(<$s>) {
+      next if /^\s*\*/;
+      push @$layout, { name => "$base$1", ofs => oct($2) } if /^\s*(\S+)\s+(\S+)/;
+    }
+    close $s;
+  }
+
+  return $layout;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub is_dir
+{
+  return -d fname $_[0];
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub is_file
+{
+  return -f fname $_[0];
 }

@@ -180,6 +180,7 @@ sub get_arch;
 sub get_expected_media_layout;
 sub get_expected_suse_media_layout;
 sub get_expected_rh_media_layout;
+sub file_name_nocase;
 sub stat_file;
 sub is_dir;
 sub is_file;
@@ -1032,7 +1033,7 @@ sub chk_eltorito
         $eltorito->{efi_size} = $c->{size};
         next;
       }
-      $eltorito->{s390x} = 1 if $c->{s390x_parm} || $c->{file_name} =~ /\.ikr$/;
+      $eltorito->{s390x} = 1 if $c->{s390x_parm} || $c->{file_name} =~ /(\/cdboot\.img|\.ikr)$/;
     }
   }
 
@@ -1099,12 +1100,15 @@ sub iso_ls
     # cf. https://sourceforge.net/p/cdrtools/mailman/message/35173024
     s/^\s*\d+\s+//;
 
-    if(/^(.)(.*)\s\[\s*(\d+)(\s+\d+)?\]\s+(.*?)\s*$/) {
+    # note: file start can be negative for zero-size files
+
+    if(/^(.)(.*)\s\[\s*(-?\d+)(\s+\d+)?\]\s+(.*?)\s*$/) {
       my $type = $1;
       my @x = split ' ', $2;
       $type = ' ' if $type eq '-';
       if($5 ne '.' && $5 ne '..') {
         my $start = $3 + 0;
+        $start = 0 if $start < 0;
         my $name = "$dir$5";
         $name =~ s#^/##;
         $name =~ s/\.?\;1$// if !$extension;
@@ -1212,28 +1216,37 @@ sub read_ini
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# get_arch()
+#
+# Return (main) architecture string for media.
+#
 sub get_arch
 {
-  my $arch;
+  # Note: order matters: if x86_64 and i386 -> report x86_64; if x86_64 and s390x -> report s390x.
 
-  for my $x ('aarch64', 'i386', 'ppc64', 'ppc64le', 's390x', 'x86_64') {
-    return $x if is_dir "boot/$x";
+  my $efi_archs = { x86_64 => 'x64', i386 => 'ia32', aarch64 => 'aa64', riscv64 => 'riscv64', loongarch64 => 'loongarch64' };
+
+  for my $x ('aarch64', 's390x', 'x86_64', 'i386', 'ppc64', 'ppc64le', 'riscv64', 'loongarch64') {
+    return $x if is_dir("boot/$x");
+    return $x if exists($efi_archs->{$x}) && is_file(file_name_nocase("efi/boot/boot$efi_archs->{$x}.efi"));
   }
 
-  return 'x86_64' if is_file "EFI/BOOT/BOOTX64.EFI";
-  return 'x86_64' if is_file "EFI/BOOT/bootx64.efi";
+  my $boot_files = {
+    'aarch64' => [ 'boot/grub/arm64-efi' ],
+    'loongarch64' => [ 'boot/grub/loongarch64-efi' ],
+    'ppc64le' => [ 'ppc/bootinfo.txt' ],
+    'riscv64' => [ 'boot/grub/riscv64-efi' ],
+    's390x' => [ 'generic.ins', 'suse.ins', 'boot/d390.ins' ],
+    'x86_64' => [ 'boot/grub/x86_64-efi' ],
+  };
 
-  return 'i386' if is_file "EFI/BOOT/BOOTIA32.EFI";
-  return 'i386' if is_file "EFI/BOOT/bootia32.efi";
+  for my $x (sort keys %$boot_files) {
+    for my $f (@{$boot_files->{$x}}) {
+      return $x if is_dir($f) || is_file($f);
+    }
+  }
 
-  return 'aarch64' if is_file "EFI/BOOT/BOOTAA64.EFI";
-  return 'aarch64' if is_file "EFI/BOOT/bootaa64.efi";
-
-  return 'ppc64le' if is_file "ppc/bootinfo.txt";
-
-  return 's390x' if is_file "generic.ins";
-
-  return $arch;
+  return undef;
 }
 
 
@@ -1271,20 +1284,24 @@ sub get_expected_suse_media_layout
 
   return unless $arch;
 
+  my $base = "boot/$arch";
+  $base = "boot/$arch/loader" if is_dir("boot/$arch/loader");
+
   if($media->{variant} eq 'install') {
     if($arch eq 'aarch64') {
-      $media->{initrd} = "boot/aarch64/initrd";
-      $media->{kernel} = "boot/aarch64/linux";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "boot/aarch64/efi";
       $media->{efi_loader} = "EFI/BOOT/bootaa64.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
       $media->{hybrid_mode} = 'efi';
       $media->{eltorito_efi} = 1;
     }
     elsif($arch eq 'i386') {
-      $media->{isolinux_cfg} = "boot/i386/loader/isolinux.cfg";
-      $media->{el_torito_image} = "boot/i386/loader/isolinux.bin";
-      $media->{initrd} = "boot/i386/loader/initrd";
-      $media->{kernel} = "boot/i386/loader/linux";
+      $media->{isolinux_cfg} = "$base/isolinux.cfg";
+      $media->{el_torito_image} = "$base/isolinux.bin";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
       $media->{efi_image} = "boot/i386/efi";
       $media->{efi_loader} = "EFI/BOOT/bootia32.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
@@ -1292,29 +1309,47 @@ sub get_expected_suse_media_layout
       $media->{eltorito_legacy} = 1;
       $media->{eltorito_efi} = 1;
     }
+    elsif($arch eq 'loongarch64') {
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "boot/loongarch64/efi";
+      $media->{efi_loader} = "EFI/BOOT/bootloongarch64.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 'ppc64le') {
-      $media->{initrd} = "boot/ppc64le/initrd";
-      $media->{kernel} = "boot/ppc64le/linux";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
       $media->{bootinfo_txt} = "ppc/bootinfo.txt";
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
       $media->{grub_earlyboot_cfg} = "boot/ppc64le/grub2-ieee1275/grub.cfg";
       $media->{hybrid_mode} = 'chrp';
     }
+    elsif($arch eq 'riscv64') {
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "boot/riscv64/efi";
+      $media->{efi_loader} = "EFI/BOOT/bootriscv64.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 's390x') {
-      $media->{initrd} = "boot/s390x/initrd";
-      $media->{initrd_off} = "boot/s390x/initrd.off";
-      $media->{initrd_siz} = "boot/s390x/initrd.siz";
-      $media->{kernel} = "boot/s390x/linux";
-      $media->{cd_ikr} = "boot/s390x/cd.ikr";
-      $media->{suse_ins} = "boot/s390x/suse.ins";
-      $media->{eltorito_legacy} = 1;
+      $media->{initrd} = "$base/initrd";
+      $media->{initrd_off} = "$base/initrd.off";
+      $media->{initrd_siz} = "$base/initrd.siz";
+      $media->{kernel} = "$base/linux";
+      $media->{cd_ikr} = "$base/cd.ikr";
+      $media->{suse_ins} = "$base/suse.ins";
+      $media->{eltorito_legacy} = 1 if is_dir("boot/x86_64");
       $media->{eltorito_s390x} = 1;
     }
     elsif($arch eq 'x86_64') {
-      $media->{isolinux_cfg} = "boot/x86_64/loader/isolinux.cfg";
-      $media->{el_torito_image} = "boot/x86_64/loader/isolinux.bin";
-      $media->{initrd} = "boot/x86_64/loader/initrd";
-      $media->{kernel} = "boot/x86_64/loader/linux";
+      $media->{isolinux_cfg} = "$base/isolinux.cfg";
+      $media->{el_torito_image} = "$base/isolinux.bin";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
       $media->{efi_image} = "boot/x86_64/efi";
       $media->{efi_loader} = "EFI/BOOT/bootx64.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
@@ -1328,9 +1363,9 @@ sub get_expected_suse_media_layout
 
     if($arch eq 'aarch64') {
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
-      $media->{initrd} = "boot/aarch64/loader/initrd";
-      $media->{kernel} = "boot/aarch64/loader/linux";
-      $media->{efi_image} = "boot/aarch64/loader/efiboot.img";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
       $media->{efi_loader} = "EFI/BOOT/bootaa64.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
       chomp(my $id = read_file "boot/mbrid");
@@ -1338,30 +1373,54 @@ sub get_expected_suse_media_layout
       $media->{hybrid_mode} = 'efi';
       $media->{eltorito_efi} = 1;
     }
+    elsif($arch eq 'loongarch64') {
+      $media->{grub_cfg} = "boot/grub2/grub.cfg";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
+      $media->{efi_loader} = "EFI/BOOT/bootloongarch64.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      chomp(my $id = read_file "boot/mbrid");
+      $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 'ppc64le') {
-      $media->{initrd} = "boot/ppc64le/initrd";
-      $media->{kernel} = "boot/ppc64le/linux";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
       $media->{bootinfo_txt} = "ppc/bootinfo.txt";
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
       $media->{grub_earlyboot_cfg} = "boot/grub2/powerpc-ieee1275/grub.cfg";
       $media->{hybrid_mode} = 'chrp';
     }
+    elsif($arch eq 'riscv64') {
+      $media->{grub_cfg} = "boot/grub2/grub.cfg";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
+      $media->{efi_loader} = "EFI/BOOT/bootriscv64.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      chomp(my $id = read_file "boot/mbrid");
+      $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 's390x') {
-      $media->{initrd} = "boot/s390x/initrd";
-      $media->{initrd_off} = "boot/s390x/initrd.off";
-      $media->{initrd_siz} = "boot/s390x/initrd.siz";
-      $media->{kernel} = "boot/s390x/linux";
-      $media->{cd_ikr} = "boot/s390x/cd.ikr";
-      $media->{suse_ins} = "boot/s390x/suse.ins";
+      $media->{initrd} = "$base/initrd";
+      $media->{initrd_off} = "$base/initrd.off";
+      $media->{initrd_siz} = "$base/initrd.siz";
+      $media->{kernel} = "$base/linux";
+      $media->{cd_ikr} = "$base/cd.ikr";
+      $media->{suse_ins} = "$base/suse.ins";
       $media->{eltorito_s390x} = 1;
     }
     elsif($arch eq 'x86_64') {
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
       $media->{grub_earlyboot_cfg} = "boot/grub2/earlyboot.cfg";
-      $media->{el_torito_image} = "boot/x86_64/loader/eltorito.img";
-      $media->{initrd} = "boot/x86_64/loader/initrd";
-      $media->{kernel} = "boot/x86_64/loader/linux";
-      $media->{efi_image} = "boot/x86_64/loader/efiboot.img";
+      $media->{el_torito_image} = "$base/eltorito.img";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
       $media->{efi_loader} = "EFI/BOOT/bootx64.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
       chomp(my $id = read_file "boot/mbrid");
@@ -1376,9 +1435,9 @@ sub get_expected_suse_media_layout
 
     if($arch eq 'aarch64') {
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
-      $media->{initrd} = "boot/aarch64/loader/initrd";
-      $media->{kernel} = "boot/aarch64/loader/linux";
-      $media->{efi_image} = "boot/aarch64/loader/efiboot.img";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
       $media->{efi_loader} = "EFI/BOOT/bootaa64.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
       chomp(my $id = read_file "boot/mbrid");
@@ -1386,30 +1445,54 @@ sub get_expected_suse_media_layout
       $media->{hybrid_mode} = 'efi';
       $media->{eltorito_efi} = 1;
     }
+    elsif($arch eq 'loongarch64') {
+      $media->{grub_cfg} = "boot/grub2/grub.cfg";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
+      $media->{efi_loader} = "EFI/BOOT/bootloongarch64.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      chomp(my $id = read_file "boot/mbrid");
+      $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 'ppc64le') {
-      $media->{initrd} = "boot/ppc64le/loader/initrd";
-      $media->{kernel} = "boot/ppc64le/loader/linux";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
       $media->{bootinfo_txt} = "ppc/bootinfo.txt";
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
       $media->{grub_earlyboot_cfg} = "boot/grub2/powerpc-ieee1275/grub.cfg";
       $media->{hybrid_mode} = 'chrp';
     }
+    elsif($arch eq 'riscv64') {
+      $media->{grub_cfg} = "boot/grub2/grub.cfg";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
+      $media->{efi_loader} = "EFI/BOOT/bootriscv64.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      chomp(my $id = read_file "boot/mbrid");
+      $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 's390x') {
-      $media->{initrd} = "boot/s390x/initrd";
-      $media->{initrd_off} = "boot/s390x/initrd.off";
-      $media->{initrd_siz} = "boot/s390x/initrd.siz";
-      $media->{kernel} = "boot/s390x/linux";
-      $media->{cd_ikr} = "boot/s390x/cd.ikr";
-      $media->{suse_ins} = "boot/s390x/suse.ins";
+      $media->{initrd} = "$base/initrd";
+      $media->{initrd_off} = "$base/initrd.off";
+      $media->{initrd_siz} = "$base/initrd.siz";
+      $media->{kernel} = "$base/linux";
+      $media->{cd_ikr} = "$base/cd.ikr";
+      $media->{suse_ins} = "$base/suse.ins";
       $media->{eltorito_s390x} = 1;
     }
     elsif($arch eq 'x86_64') {
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
       $media->{grub_earlyboot_cfg} = "boot/grub2/earlyboot.cfg";
-      $media->{el_torito_image} = "boot/x86_64/loader/eltorito.img";
-      $media->{initrd} = "boot/x86_64/loader/initrd";
-      $media->{kernel} = "boot/x86_64/loader/linux";
-      $media->{efi_image} = "boot/x86_64/loader/efiboot.img";
+      $media->{el_torito_image} = "$base/eltorito.img";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
       $media->{efi_loader} = "EFI/BOOT/bootx64.efi";
       $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
       chomp(my $id = read_file "boot/mbrid");
@@ -1519,6 +1602,32 @@ sub get_expected_rh_media_layout
       $media->{eltorito_efi} = 1;
     }
   }
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# file_name_nocase(name)
+#
+# Get file name, matching case-insensitive.
+#
+# - name: file name
+#
+# Returns real file name, matched case-insensitve.
+#
+# Note: uses global var $iso_ls_rockridge.
+#
+sub file_name_nocase
+{
+  my $name = $_[0];
+
+  return undef if !defined $name;
+
+  $name = "\L$name";
+
+  for my $n (sort keys %{$iso_ls_rockridge->{by_name}}) {
+    return $n if $name eq "\L$n";
+  }
+
+  return undef;
 }
 
 
