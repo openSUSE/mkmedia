@@ -328,15 +328,6 @@ else {
 
   exit 0 if $opt_no_mount;
 
-  my $fd;
-
-  # get file handle in case $src is inside $dst and the tmpfs mount would shadow it
-  if(open $fd, $src) {
-    my $fnr = fileno $fd;
-    $src = "/proc/$$/fd/$fnr";
-    print "using $src\n" if $opt_verbose >= 2;
-  }
-
   sudo_cmd "mount -o 'size=0,nr_inodes=0' -t tmpfs tmpfs '$dst'";
 
   unpack_archive $archive_type, $src, $dst, $src_part;
@@ -531,7 +522,7 @@ sub mount
 #
 sub file_magic
 {
-  my $type = "file -b -k -L $_[0] 2>/dev/null";
+  my $type = "file -b -k -L '$_[0]' 2>/dev/null";
   $type = "$_[1] | $type" if $_[1];
 
   return `$type`;
@@ -580,7 +571,7 @@ sub fs_type
       $type->{crypto} = $1;
     }
 
-    my $parti = `parti --json $file 2>/dev/null`;
+    my $parti = `parti --json '$file' 2>/dev/null`;
     $parti = decode_json($parti) if $parti;
 
     if($parti->{gpt_primary}) {
