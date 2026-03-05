@@ -977,6 +977,7 @@ General options:
 
       --verbose                   Show more detailed messages. Can be repeated to log even more.
       --version                   Show mkmedia version.
+      --dry-run                   Do everything except writing the final image.
       --tmp-dir TMPDIR            Use TMPDIR as temporary directory (default: /tmp).
       --save-tmp                  Keep temporary files.
       --help                      Write this help text.

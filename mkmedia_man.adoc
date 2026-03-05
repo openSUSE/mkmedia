@@ -42,6 +42,9 @@ Show more detailed messages. Can be repeated to log even more.
 *--version*::
 Show mkmedia version.
 
+*--dry-run*::
+Do everything except writing the final image.
+
 *--tmp-dir*=_TMPDIR_::
 Use TMPDIR as temporary directory (default: /tmp). +
 Some operations can require a substantial amount of temporary disk space. For example, modifying
