@@ -1463,6 +1463,10 @@ sub analyze_boot
       $boot->{$main_arch}{initrd} = "$z_dir/initrd" if is_file("$z_dir/initrd");
       $boot->{$main_arch}{kernel} = "$z_dir/linux" if is_file("$z_dir/linux");
 
+      for my $p (qw ( cdboot.prm generic.prm genericdvd.prm parmfile parmfile.hmc )) {
+        push @{$boot->{$main_arch}{parmfiles}}, "$z_dir/$p" if is_file("$z_dir/$p");
+      }
+
       $boot->{$main_arch}{parmfile} = $parmfile;
       $boot->{$main_arch}{zipl_map} = $boot->{$main_arch}{kernel};
       $boot->{$main_arch}{zipl_map} =~ s#/[^/]*$#/zipl.map#;
@@ -1476,6 +1480,7 @@ sub analyze_boot
         $boot->{$main_arch}{bl}{ikr}{ins} = "suse.ins" if is_file("suse.ins");
         $boot->{$main_arch}{bl}{ikr}{ins} = "$z_dir/suse.ins" if is_file("$z_dir/suse.ins");
         $boot->{$main_arch}{bl}{ikr}{layout} = read_s390x_ins $boot->{$main_arch}{bl}{ikr}{ins};
+        # used when parsing boot loader config
         $boot->{$main_arch}{bl}{ikr}{config} = $parmfile;
       }
     }
@@ -1615,21 +1620,6 @@ sub build_todo
     if($_ eq 's390x') {
       $opt_no_mbr_code = 1 if !defined $opt_no_mbr_code;
       $opt_zipl = 1 if !defined $opt_zipl;
-      if($opt_boot_options && $boot->{s390x}{parmfile}) {
-        my $f = copy_or_new_file $boot->{s390x}{parmfile};
-        my $boot_opts;
-        if(open my $fd, $f) {
-          local $/;
-          $boot_opts = <$fd>;
-          close $fd;
-        }
-        $boot_opts =~ s/\s*$//;
-        $opt_boot_options = merge_options $boot_opts, $opt_boot_options;
-        if(open my $fd, ">", $f) {
-          print $fd "$opt_boot_options\n";
-          close $fd;
-        }
-      }
       if($opt_zipl) {
         my $zipl_map = $boot->{s390x}{zipl_map};
         my $zipl_map_dirs = $zipl_map;
@@ -2305,7 +2295,7 @@ sub run_isozipl
 
   $opt = " --kernel $kernel --initrd $initrd --map $map";
 
-  my $boot_opts = $opt_boot_options;
+  my $boot_opts = merge_options "", $opt_boot_options;
 
   if($parmfile) {
     $opt .= " --parm $parmfile";
@@ -3656,6 +3646,8 @@ sub merge_options
   my $opts = $_[0];
   my $new_opts = $_[1];
 
+  $opts =~ s/\s*$//;
+
   my $p_opts = parse_options $opts;
   my $p_new_opts = parse_options $new_opts;
 
@@ -3922,6 +3914,22 @@ sub update_boot_options
       my $m;
       $m = copy_file "$boot->{$b}{bl}{isolinux}{base}/message" if $opt_new_boot_entry;
       isolinux_add_option $n, $opt_boot_options, $m;
+    }
+    if($boot->{$b}{bl}{ikr}) {
+      for my $parmfile (@{$boot->{s390x}{parmfiles}}) {
+        my $f = copy_or_new_file $parmfile;
+        my $boot_opts;
+        if(open my $fd, $f) {
+          local $/;
+          $boot_opts = <$fd>;
+          close $fd;
+        }
+        $boot_opts = merge_options $boot_opts, $opt_boot_options;
+        if(open my $fd, ">", $f) {
+          print $fd "$boot_opts\n";
+          close $fd;
+        }
+      }
     }
     if($boot->{$b}{bl}{grub2}) {
       my $n = copy_file $boot->{$b}{bl}{grub2}{config} || copy_file "$boot->{$b}{bl}{grub2}{base}/grub.cfg";
