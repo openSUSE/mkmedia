@@ -33,6 +33,10 @@
 
     $self->{base} = $t;
 
+    if(-x "/usr/bin/setfacl") {
+      system "/usr/bin/setfacl --remove-all '$t'";
+    }
+
     if(!$save_tmp) {
       my $s_t = $SIG{TERM};
       $SIG{TERM} = sub { File::Temp::cleanup; &$s_t if $s_t };
@@ -463,6 +467,8 @@ if(defined $opt_tmp_dir) {
   die "$opt_tmp_dir: directory not writable\n" unless -w _ && -W _;
   die "$opt_tmp_dir: directory not executable\n" unless -X _ && -X _;
 }
+
+umask 0022;
 
 $ENV{PATH} = "$LIBEXECDIR/mkmedia:/usr/bin:/bin:/usr/sbin:/sbin";
 
