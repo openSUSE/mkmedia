@@ -1022,10 +1022,12 @@ Then add it:
 === Integrate driver updates
 
 Driver updates (DUDs) come in a special format. `mkmedia` recognizes this
-format and can integrate them directly into the initrd.
+format and can add them to the initrd or apply them directly to the ISO image.
 
 The advantage compared to using a `dud` or `inst.dud` boot option is that this way you do not have to download it
 during the installation process and there is no signature check because initrd content is implicitly trusted.
+
+To add a DUD to the initrd, do:
 
 [source]
 ----
@@ -1034,6 +1036,24 @@ during the installation process and there is no signature check because initrd c
   SLE-15-SP6-Online-x86_64-GM-Media1.iso
 ...
 ----
+
+This will make the DUD automatically available during the installation
+process. You do not have to specify it separately on the kernel command
+line. The DUD is applied during the installation.
+
+Alternatively, you can apply a DUD directly to the ISO image using the `--apply-dud` option:
+
+[source]
+----
+# mkmedia --create new.iso \
+  --apply-dud foobar.dud \
+  SLE-15-SP6-Online-x86_64-GM-Media1.iso
+...
+----
+
+The difference to using `--initrd` is that the DUD is applied by `mkmedia` when creating the new ISO image.
+This has the advantage that the DUD can also describe changes to the medium itself. For example, updating the kernel
+used during installation or an update to the boot loader used for booting the installation medium.
 
 === Integrate add-on repositories
 
@@ -1055,6 +1075,29 @@ creating add-on "my emacs" (alias my_emacs):
 ----
 
 This currently works only for YaST-based installation media like SLE-15, Leap-15, or Tumbleweed, though.
+
+=== Modify files on the installation medium
+
+If you need to apply changes to the installation medium not covered so far:
+you can also change or add directories and files directly on the installation
+medium.
+
+For this, specify several source arguments to `mkmedia`. All these sources
+(can be ISO images or plain directories) are combined, with later specified
+sources taking precedence.
+
+For example, to replace the parmfile on an s390x medium with your own version,
+create the necessary directory structure and copy your file into the right spot:
+
+[source]
+----
+# mkdir -p /tmp/foo/boot/s390x
+# cp my_special_parmfile /tmp/foo/boot/s390x/parmfile
+# mkmedia --create new.iso \
+  SLE-15-SP6-Full-s390x-GM-Media1.iso \
+  /tmp/foo
+...
+----
 
 === Advanced examples
 
