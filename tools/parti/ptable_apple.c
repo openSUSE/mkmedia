@@ -41,10 +41,12 @@ int dump_apple_ptable(disk_t *disk)
   json_object_object_add(disk->json_disk, "apple", json_apple);
 
   json_object_object_add(json_apple, "block_size", json_object_new_int(disk->block_size));
+  json_object_object_add(json_apple, "disk_size", json_object_new_int(disk->size_in_bytes / disk->block_size));
   json_object_object_add(json_apple, "entries", json_object_new_int(parts));
 
   log_info(SEP "\napple partition table: %d entries\n", parts);
   log_info("  sector size: %d\n", disk->block_size);
+  log_info("  disk size: %"PRIu64"\n", disk->size_in_bytes / disk->block_size);
 
   json_object *json_table = json_object_new_array();
   json_object_object_add(json_apple, "partitions", json_table);
