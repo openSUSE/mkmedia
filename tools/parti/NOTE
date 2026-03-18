@@ -1,3 +1,5 @@
+parti 2.11
+
 Does not contain libmediacheck related parts (see __WITH_MEDIA_CHECK__) to
 avoid additional linking dependency (and the info is not used by
 mkmedia/verifymedia anyway).

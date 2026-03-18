@@ -297,7 +297,9 @@ void dump_mbr_ptable(disk_t *disk)
   log_info(SEP "\nmbr id: 0x%08x\n", id);
 
   json_object_object_add(json_mbr, "block_size", json_object_new_int(disk->block_size));
+  json_object_object_add(json_mbr, "disk_size", json_object_new_int(disk->size_in_bytes / disk->block_size));
   log_info("  sector size: %u\n", disk->block_size);
+  log_info("  disk size: %"PRIu64"\n", disk->size_in_bytes / disk->block_size);
 
   json_object_object_add(json_mbr, "id", json_object_new_format("0x%08x", id));
 
