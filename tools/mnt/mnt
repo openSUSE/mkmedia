@@ -328,6 +328,15 @@ else {
 
   exit 0 if $opt_no_mount;
 
+  my $fd;
+
+  # get file handle in case $src is inside $dst and the tmpfs mount would shadow it
+  if(open $fd, $src) {
+    my $fnr = fileno $fd;
+    $src = "/proc/$$/fd/$fnr";
+    print "using $src\n" if $opt_verbose >= 2;
+  }
+
   sudo_cmd "mount -o 'size=0,nr_inodes=0' -t tmpfs tmpfs '$dst'";
 
   unpack_archive $archive_type, $src, $dst, $src_part;
@@ -985,7 +994,8 @@ sub unpack_archive
           $c = 'gzip --quiet -dc';
         }
         elsif($1 eq 'xz') {
-          $c = 'xz --quiet -dc';
+          # xz doesn't like symlinks due to landlock lsm
+          $c = 'xz --quiet -dc <';
         }
         elsif($1 eq 'zst') {
           $c = 'zstd --quiet --force -dc';
@@ -997,6 +1007,9 @@ sub unpack_archive
           $c = 'rpm2cpio';
         }
         if($cmd) {
+          # remove potential redirection, see xz
+          $c =~ s/\s*<$//;
+
           $cmd .= " | $c";
         }
         else {

@@ -31,7 +31,7 @@ Packages for openSUSE and SLES are built at the [openSUSE Build Service](https:/
 
 See also my mini-series of articles around SUSE installation media and driver updates that highlight specific use-cases:
 
-- [Make your own SUSE DVD – Tooling for SUSE and Multi-Linux installation / Live media](https://www.suse.com/c/make-your-own-suse-dvd-tooling-for-suse-and-multi-linux-installation-live-media)
+- [Make your own SUSE DVD – Tooling for SUSE and Multi-Linux installation / Live media](https://www.suse.com/c/make-your-own-suse-dvd-tooling-for-suse-and-multi-linux-installation-live-media) ([updated version](suse_blog.html))
 - [Update the update process!](https://lizards.opensuse.org/2017/02/16/fun-things-to-do-with-driver-updates)
 - [But what if I need a new kernel?](https://lizards.opensuse.org/2017/03/16/fun-things-to-do-with-driver-updates-2)
 - [And what if I want to **remove** some files?](https://lizards.opensuse.org/2017/04/25/fun-things-to-do-with-driver-updates-3)

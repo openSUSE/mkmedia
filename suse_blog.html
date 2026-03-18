@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.23">
+<title>Make your own SUSE DVD - Tooling for SUSE and Multi-Linux installation / Live media</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment the following line when using as a custom stylesheet */
+/* @import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700"; */
+html{font-family:sans-serif;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+b,strong{font-weight:bold}
+abbr{font-size:.9em}
+abbr[title]{cursor:help;border-bottom:1px dotted #dddddf;text-decoration:none}
+dfn{font-style:italic}
+hr{height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type=checkbox],input[type=radio]{padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,::before,::after{box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;line-height:1;position:relative;cursor:auto;-moz-tab-size:4;-o-tab-size:4;tab-size:4;word-wrap:anywhere;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ul.square{list-style-type:square}
+ul.circle ul:not([class]),ul.disc ul:not([class]),ul.square ul:not([class]){list-style:inherit}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:1px solid #dedede;word-wrap:normal}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre).nobreak{word-wrap:normal}
+:not(pre).nowrap{white-space:nowrap}
+:not(pre).pre-wrap{white-space:pre-wrap}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.2),inset 0 0 0 .1em #fff;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin:0 auto;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child{border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border:1px solid #e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:none;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:hsla(0,0%,100%,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details{margin-left:1.25rem}
+details>summary{cursor:pointer;display:block;position:relative;line-height:1.6;margin-bottom:.625rem;outline:none;-webkit-tap-highlight-color:transparent}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"";border:solid transparent;border-left:solid;border-width:.3em 0 .3em .5em;position:absolute;top:.5em;left:-1.25rem;transform:translateX(15%)}
+details[open]>summary::before{border:solid transparent;border-top:solid;border-width:.5em .3em 0;transform:translateY(15%)}
+details>summary::after{content:"";width:1.25rem;height:1em;position:absolute;top:.3em;left:-1.25rem}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class=paragraph]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6);word-wrap:anywhere}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border:1px solid #e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;border-radius:4px}
+.sidebarblock{border:1px solid #dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;border-radius:4px}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:first-child,.sidebarblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child,.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{border-radius:4px;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos,pre.pygments .linenos{border-right:1px solid;opacity:.35;padding-right:.5em;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+pre.pygments span.linenos{display:inline-block;margin-right:.75em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans-serif;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;font-size:.85rem;text-align:left;margin-right:0}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:1.25em;word-wrap:anywhere}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>*>tr>*{border-width:1px}
+table.grid-cols>*>tr>*{border-width:0 1px}
+table.grid-rows>*>tr>*{border-width:1px 0}
+table.frame-all{border-width:1px}
+table.frame-ends{border-width:1px 0}
+table.frame-sides{border-width:0 1px}
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>*{border-top-width:0}
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>*{border-bottom-width:0}
+table.frame-none>*>tr>:first-child,table.frame-ends>*>tr>:first-child{border-left-width:0}
+table.frame-none>*>tr>:last-child,table.frame-ends>*>tr>:last-child{border-right-width:0}
+table.stripes-all>*>tr,table.stripes-odd>*>tr:nth-of-type(odd),table.stripes-even>*>tr:nth-of-type(even),table.stripes-hover>*>tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+li>p:empty:only-child::before{content:"";display:inline-block}
+ul.checklist>li>p:first-child{margin-left:-1em}
+ul.checklist>li>p:first-child>.fa-square-o:first-child,ul.checklist>li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist>li>p:first-child>input[type=checkbox]:first-child{margin-right:.25em}
+ul.inline{display:flex;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+td.hdlist2{word-wrap:anywhere}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:4px solid #fff;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active,#footnotes .footnote a:first-of-type:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);border-radius:50%;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt,summary{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,td.hdlist1,span.alt,summary{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]{border-bottom:1px dotted}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#header,#content,#footnotes,#footer{max-width:none}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media amzn-kf8,print{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+</head>
+<body class="article">
+<div id="header">
+<h1>Make your own SUSE DVD - Tooling for SUSE and Multi-Linux installation / Live media</h1>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>When you are doing Linux installations regularly or have a large number of
+machines to deploy you might want to make changes to the official
+installation media to make work more efficient.</p>
+</div>
+<div class="paragraph">
+<p>This might range from having your network setup parameters integrated, to
+running your favorite autoyast or kickstart profile automatically, to
+integrating a driver update or a fixed package without which you cannot run
+the installation, to upgrading to latest kernel and modules your hardware
+require, to updating the entire installer.</p>
+</div>
+<div class="paragraph">
+<p>Or you might want to have a size reduced variant of the full media containing
+only the software modules and products you need. Or minimalistic media for
+purely network-based installations.</p>
+</div>
+<div class="paragraph">
+<p>There is a group of tools that lets you do all this easily. They come in two
+packages: <code>checkmedia</code> and <code>mksusecd</code>.</p>
+</div>
+<div class="paragraph">
+<p>A lesser known fact is that these tools work not only with SUSE media but
+also with Multi-Linux media. That is, with Fedora, RHEL, CentOS, and
+other RHEL derivatives. And not only with installation media but also
+Live media.</p>
+</div>
+<div class="paragraph">
+<p>Supported are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>openSUSE media (Leap, Tumbleweed, Slowroll)</p>
+</li>
+<li>
+<p>SLE-11, SLE-12, SLE-15 (YaST installer)</p>
+</li>
+<li>
+<p>SLE-16 (Agama installer)</p>
+</li>
+<li>
+<p>SLE-Micro self-install images</p>
+</li>
+<li>
+<p>any KIWI-generated installation media</p>
+</li>
+<li>
+<p>SUSE Multi-Linux media</p>
+</li>
+<li>
+<p>Fedora, RHEL, and derivatives (CentOS, Rocky, AlmaLinux, &#8230;&#8203;) media</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This article will introduce these tools and walk you through a number of
+use cases.</p>
+</div>
+<div class="paragraph">
+<p>Note that these tools are not suitable for creating installation or Live media from
+scratch. You always have to have some existing ISO image to start with.</p>
+</div>
+<div class="paragraph">
+<p>Note also that these media are not only suitable to be used as ISO for
+burning DVDs but are at the same time also hybrid images to be used as disks
+(USB media). You can even produce pure disk images and skip the ISO part if
+you are going to use them only as disk images.</p>
+</div>
+</div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_checkmedia_and_tagmedia">checkmedia and tagmedia</a>
+<ul class="sectlevel2">
+<li><a href="#_checkmedia">checkmedia</a></li>
+<li><a href="#_tagmedia">tagmedia</a></li>
+</ul>
+</li>
+<li><a href="#_verifymedia">verifymedia</a></li>
+<li><a href="#_mkmedia">mkmedia</a>
+<ul class="sectlevel2">
+<li><a href="#_set_boot_options">Set boot options</a></li>
+<li><a href="#_set_installer_config_options">Set installer config options</a></li>
+<li><a href="#_create_onlinenetwork_installation_media_from_full_media">Create online/network installation media from full media</a>
+<ul class="sectlevel3">
+<li><a href="#_1_sle15_sle_16_leap_16_online_media">1. SLE15, SLE-16, Leap-16 online media</a></li>
+<li><a href="#_2_tumbleweed_leap_15_online_media_not_officially_available">2. Tumbleweed, Leap-15 online media (not officially available)</a></li>
+<li><a href="#_3_multi_linux_fedora_online_media">3. Multi-Linux, Fedora online media</a></li>
+<li><a href="#_4_tumbleweed_leap_15_network_media_no_installer">4. Tumbleweed, Leap-15 network media (no installer)</a></li>
+<li><a href="#_5_leap_16_sle_16_network_media_no_installer_not_officially_available">5. Leap-16, SLE-16 network media (no installer, not officially available)</a></li>
+<li><a href="#_6_multi_linux_fedora_network_media_not_officially_available">6. Multi-Linux, Fedora network media (not officially available)</a></li>
+</ul>
+</li>
+<li><a href="#_create_customized_sle_15_media_containing_selected_products_and_sle_modules">Create customized SLE-15 media containing selected products and SLE-modules</a></li>
+<li><a href="#_create_suse_media_with_updated_installer_using_tftpboot_installation_product_packages">Create SUSE media with updated installer using tftpboot-installation-&lt;PRODUCT&gt; packages</a></li>
+<li><a href="#_update_kernel_modules_and_firmware_on_installation_media">Update kernel, modules, and firmware on installation media</a>
+<ul class="sectlevel3">
+<li><a href="#_1_update_kernel_keep_module_config">1. Update kernel, keep module config</a></li>
+<li><a href="#_2_add_kernel_modules">2. Add kernel modules</a></li>
+<li><a href="#_3_update_kernel_firmware">3. Update kernel firmware</a></li>
+<li><a href="#_4_kernel_packages_usrmerge_or_not">4. Kernel packages: usrmerge or not?</a></li>
+</ul>
+</li>
+<li><a href="#_integrate_changes_into_installation_system_or_initrd">Integrate changes into installation system or initrd</a>
+<ul class="sectlevel3">
+<li><a href="#_1_update_packages">1. Update packages</a></li>
+<li><a href="#_2_change_files_not_in_packages">2. Change files not in packages</a></li>
+</ul>
+</li>
+<li><a href="#_integrate_driver_updates">Integrate driver updates</a></li>
+<li><a href="#_integrate_add_on_repositories">Integrate add-on repositories</a></li>
+<li><a href="#_modify_files_on_the_installation_medium">Modify files on the installation medium</a></li>
+<li><a href="#_advanced_examples">Advanced examples</a>
+<ul class="sectlevel3">
+<li><a href="#_1_create_pure_disk_image_no_iso_image">1. Create pure disk image (no ISO image)</a></li>
+<li><a href="#_2_update_shim_or_grub">2. Update shim or grub</a></li>
+<li><a href="#_3_sign_your_own_media">3. Sign your own media</a></li>
+<li><a href="#_4_sign_multi_linux_fedora_rhel_media">4. Sign Multi-Linux, Fedora, RHEL media</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#_further_reading">Further reading</a></li>
+</ul>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_checkmedia_and_tagmedia">checkmedia and tagmedia</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both <code>checkmedia</code> and <code>tagmedia</code> are part of the <code>checkmedia</code> package.</p>
+</div>
+<div class="paragraph">
+<p><code>checkmedia</code> is the tool for users to verify the correctness of downloaded
+media. It relies on embedded meta data like an sha256 digest and/or gpg
+signature to work. The Multi-Linux equivalent is <code>checkisomd5</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>tagmedia</code> manages or creates these meta data. The Multi-Linux equivalent
+is <code>implantisomd5</code>.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s have a look at typical examples.</p>
+</div>
+<div class="sect2">
+<h3 id="_checkmedia">checkmedia</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkmedia Fedora-Server-netinst-x86_64-41-1.4.iso
+        app: Fedora-S-dvd-x86_64-41
+   iso size: 932520 kiB
+       skip: 30 kiB
+   checking: 100%
+     result: iso md5 ok, fragments md5 ok
+        md5: 7675831e6771993c605ba4808d57ecab
+  signature: not signed</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkmedia openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+        app: openSUSE-Tumbleweed-DVD-x86_64-Build4388.1-Media
+   iso size: 4546910 kiB
+        pad: 300 kiB
+  partition: start 7612 kiB, size 4539972 kiB
+   checking: 100%
+     result: iso sha256 ok, partition sha256 ok
+     sha256: 3d0d694634c0ed76a38f4960e95894d7a754b96a23d7d102ee4a7f302b32b3f4
+  signature: ok
+  signed by: openSUSE Project Signing Key &lt;opensuse@opensuse.org&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can see that both images are correct. Fedora is using md5 instead of
+sha256, though. The shown md5 and sha256 digests are the values you would
+get if you were to run <code>md5sum</code> or <code>sha256sum</code> commands on the image
+files.</p>
+</div>
+<div class="paragraph">
+<p>In addition, the digest meta data stored in the openSUSE image are signed
+using the openSUSE key. The key is available on every Tumbleweed system - as
+part of the <code>openSUSE-build-key</code> package. This way you can be sure the image
+has not been modified by anyone.</p>
+</div>
+<div class="paragraph">
+<p>Without a signature you have to rely on manually comparing the md5 or sha256
+digests with values you get from trustworthy sources.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tagmedia">tagmedia</h3>
+<div class="paragraph">
+<p><code>tagmedia</code> gives an insight into the meta data block holding the digest data:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tagmedia Fedora-Server-netinst-x86_64-41-1.4.iso
+ISO MD5SUM = 67f0b58caf55a50887e4d0068eb625c6
+SKIPSECTORS = 15
+RHLISOSTATUS = 0
+FRAGMENT SUMS = ad5a88259b4dc247c12d5c248fd3e986d2c55bdb5181284b4e246dca1577
+FRAGMENT COUNT = 20
+THIS IS NOT THE SAME AS RUNNING MD5SUM ON THIS ISO!!</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tagmedia openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+check = 1
+pad = 150
+sha256sum = 57d52ef2c779d0fe4f40e03d80b599c72f9b401022d19700f7860457540355c6
+partition = 15224,9079944,621370e05b0ef2438db4ac6c407c9c501914ba49878a5bf0dd5ba698ad90af3c
+signature = 30448</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You will immediately notice the md5 and sha256 digests stored in the meta
+data are not the same as the calculated digests shown by <code>checkmedia</code>.
+Fedora even embeds a line warning people about this. The stored digest is in
+both cases the digest calculated excluding the meta data block.</p>
+</div>
+<div class="paragraph">
+<p>If there is a <code>signature</code> entry it points to the start of a signature block.</p>
+</div>
+<div class="paragraph">
+<p>As an experiment, let&#8217;s sign the Fedora image. Say, you have a gpg key
+<code>susetest</code> in your key ring; you can do:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tagmedia --create-signature susetest Fedora-Server-netinst-x86_64-41-1.4.iso
+public key for verifying Fedora-Server-netinst-x86_64-41-1.4.iso written to Fedora-Server-netinst-x86_64-41-1.4.iso.key</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s check what changed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tagmedia Fedora-Server-netinst-x86_64-41-1.4.iso
+ISO MD5SUM = 67f0b58caf55a50887e4d0068eb625c6
+SKIPSECTORS = 15
+RHLISOSTATUS = 0
+FRAGMENT SUMS = ad5a88259b4dc247c12d5c248fd3e986d2c55bdb5181284b4e246dca1577
+FRAGMENT COUNT = 20
+THIS IS NOT THE SAME AS RUNNING MD5SUM ON THIS ISO!!
+SIGNATURE = 1864980</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can see a newly added <code>SIGNATURE</code> entry.</p>
+</div>
+<div class="paragraph">
+<p>For convenience, <code>tagmedia</code> has also stored the public part of the key in
+<code>Fedora-Server-netinst-x86_64-41-1.4.iso.key</code> - you will need it to verify the signature:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># gpg Fedora-Server-netinst-x86_64-41-1.4.iso.key
+gpg: WARNING: no command supplied.  Trying to guess what you mean ...
+pub   ed25519 2025-05-16 [SC] [expires: 2028-05-15]
+      CC3DFF978856FF27B1A53BD88C471DBABABCEC4C
+uid           susetest
+sub   cv25519 2025-05-16 [E] [expires: 2028-05-15]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now, run <code>checkmedia</code> again:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkmedia \
+  --key-file Fedora-Server-netinst-x86_64-41-1.4.iso.key \
+  Fedora-Server-netinst-x86_64-41-1.4.iso
+        app: Fedora-S-dvd-x86_64-41
+   iso size: 932520 kiB
+       skip: 30 kiB
+   checking: 100%
+     result: iso md5 ok, fragments md5 ok
+        md5: fa2076cd08cb69b002afdeb2faad629a
+  signature: ok
+  signed by: susetest</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that although the md5 digest of the image has changed (the image now
+contains the gpg signature) the stored md5 digest shown by <code>tagmedia</code> has not
+- this is because as mentioned previously the stored md5 digest is
+calculated excluding the meta data block.</p>
+</div>
+<div class="paragraph">
+<p>Note also that <code>checkisomd5</code> will ignore the signature, but the file will
+still be correct from the perspective of <code>checkisomd5</code>, even with embedded
+signature.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verifymedia">verifymedia</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>verifymedia</code> and <code>mkmedia</code> are part of the <code>mksusecd</code> package. These tools
+are for people creating new or modified media.</p>
+</div>
+<div class="paragraph">
+<p>In contrast to <code>checkmedia</code>, <code>verifymedia</code> testifies technical correctness:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># verifymedia openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+Verifying: openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+Check results: [✔] = ok, [✘] = bad, [!] = not ideal
+[✔] image has ISO-9660 file system
+[✔] image uses Rock Ridge extension
+[✔] image uses Joliet extension
+[✔] image has volume id
+[✔] all files are world-readable
+[✔] all files are owned by root
+[✔] media style: suse
+[✔] media variant: install
+[✔] media architecture: x86_64
+[✔] media layout supported
+[✔] .treeinfo architecture matches
+[✔] kernel and initrd referenced in .treeinfo exist
+[✔] kernel exists
+[✔] initrd exists
+[✔] isolinux config exists
+[✔] UEFI grub config exists
+[✔] UEFI grub config references correct root file system
+[✔] UEFI boot loader exists
+[✔] UEFI boot image exists
+[✔] no garbage files
+[✔] has MBR or GPT partition table
+[✔] has boot partition with VFAT file system
+[✔] boot partition type is EFI System Partition
+[✔] boot partition refers to UEFI boot image file
+[✔] has data partition pointing to ISO image
+[✔] ISO data partition has non-zero offset
+[✔] no invalid partition entries
+[✔] El Torito x86 legacy bootable
+[✔] El Torito UEFI bootable
+[✔] El Torito UEFI entry points to boot partition
+[✔] ISO has digest
+[✔] ISO digest is sha256 or better
+[✔] ISO is ready to be signed
+[✔] ISO is signed</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Looks really good. :-)</p>
+</div>
+<div class="paragraph">
+<p>But this is not always the case. If you are curious, experiment a bit with publicly available installation media.</p>
+</div>
+<div class="paragraph">
+<p>Here is some slightly incorrect example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># verifymedia openSUSE-Tumbleweed-NET-aarch64-Snapshot20250522-Media.iso
+Verifying: openSUSE-Tumbleweed-NET-aarch64-Snapshot20250522-Media.iso
+Check results: [✔] = ok, [✘] = bad, [!] = not ideal
+...
+[✘] .treeinfo architecture matches
+  'x86_64' != 'aarch64'
+  'arch' entry in 'general' section in .treeinfo must match media architecture.
+[✘] kernel and initrd referenced in .treeinfo exist
+  boot/x86_64/loader/initrd
+  boot/x86_64/loader/linux
+  Kernel and initrd referenced in .treeinfo must exist.
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case, the <code>.treeinfo</code> file does not use the correct architecture.</p>
+</div>
+<div class="paragraph">
+<p>If you create media yourself with <code>mkmedia</code> and run into problems, it might be a good idea
+to check your modified media with <code>verifymedia</code> for signs of trouble.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_mkmedia">mkmedia</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>mkmedia</code> (in package <code>mksusecd</code>) is the tool to modify existing installation or Live images. It used to be
+called <code>mksusecd</code> but that name does not reflect the fact that it is no longer limited to SUSE media.</p>
+</div>
+<div class="paragraph">
+<p>Typical things you can do include</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>set boot options</p>
+</li>
+<li>
+<p>set installer config options</p>
+</li>
+<li>
+<p>create online / network installation media from full installation media</p>
+</li>
+<li>
+<p>create customized SLE media containing selected products and SLE-modules</p>
+</li>
+<li>
+<p>create media with updated installer using tftpboot-installation-&lt;PRODUCT&gt; packages</p>
+</li>
+<li>
+<p>update kernel, modules, and firmware on installation media</p>
+</li>
+<li>
+<p>integrate changes into installation system or initrd</p>
+</li>
+<li>
+<p>integrate driver updates</p>
+</li>
+<li>
+<p>integrate add-on repositories</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Some advanced use-cases</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>create pure disk image (no ISO image)</p>
+</li>
+<li>
+<p>update shim or grub</p>
+</li>
+<li>
+<p>sign your own media</p>
+</li>
+<li>
+<p>sign Multi-Linux / RHEL media</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s go through the list looking at some examples.</p>
+</div>
+<div class="sect2">
+<h3 id="_set_boot_options">Set boot options</h3>
+<div class="paragraph">
+<p>The <code>--boot</code> option lets you add a new boot option.
+For example, to have an AutoYaST installation as default, add a reference to your AutoYaST file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --boot "autoyast=http://example.com/ay1.xml" \
+  SLE-15-SP6-Online-x86_64-QU2-Media1.iso
+media style suse, variant install
+Repositories:
+  SLES15-SP6 [15.6-0]
+assuming repo-md sources
+using signing key, keyid = 7B0EC6208CA8E305
+El-Torito legacy bootable (x86_64)
+UEFI image: boot/x86_64/efi
+updating UEFI image: boot/x86_64/efi
+El-Torito UEFI bootable (x86_64)
+building: 100%
+calculating sha256...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is what the boot screen now looks like:</p>
+</div>
+<details>
+<summary class="title">Boot screen with AutoYaST option added</summary>
+<div class="content">
+<div class="imageblock">
+<div class="content">
+<img src="suse_blog_img_01.jpg" alt="Boot screen with AutoYaST option added">
+</div>
+</div>
+</div>
+</details>
+<div class="paragraph">
+<p>You can use <code>--add-entry</code> to create a separate entry instead of modifying
+the default boot entry:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --boot "autoyast=http://example.com/ay1.xml" \
+  --add-entry "Auto 1" \
+  SLE-15-SP6-Online-x86_64-QU2-Media1.iso
+...</code></pre>
+</div>
+</div>
+<details>
+<summary class="title">Boot screen with separate AutoYaST entry</summary>
+<div class="content">
+<div class="imageblock">
+<div class="content">
+<img src="suse_blog_img_02.jpg" alt="Boot screen with separate AutoYaST entry">
+</div>
+</div>
+</div>
+</details>
+<div class="paragraph">
+<p>Another thing you might want to change is the default kernel console, for example on aarch64:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --boot "console=ttyAMA0" \
+  SLE-15-SP6-Online-aarch64-QU2-Media1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a documentation of possible boot options look here:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="https://en.opensuse.org/SDB:Linuxrc" class="bare">https://en.opensuse.org/SDB:Linuxrc</a> (linuxrc, YaST)</p>
+</li>
+<li>
+<p><a href="https://agama-project.github.io/docs/user/reference/boot_options" class="bare">https://agama-project.github.io/docs/user/reference/boot_options</a> (Agama)</p>
+</li>
+<li>
+<p><a href="https://anaconda-installer.readthedocs.io/en/latest/boot-options.html" class="bare">https://anaconda-installer.readthedocs.io/en/latest/boot-options.html</a> (Anaconda)</p>
+</li>
+<li>
+<p><a href="https://github.com/dracutdevs/dracut/blob/master/man/dracut.cmdline.7.asc" class="bare">https://github.com/dracutdevs/dracut/blob/master/man/dracut.cmdline.7.asc</a> (dracut)</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_set_installer_config_options">Set installer config options</h3>
+<div class="paragraph">
+<p>In most cases, boot options will be intended not for the kernel but for the installer. In
+this case you can have configuration options integrated into the initrd directly.</p>
+</div>
+<div class="paragraph">
+<p>For example, setting the AutoYaST parameter could instead be done this way:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --initrd-config "autoyast=http://example.com/ay1.xml" \
+  SLE-15-SP6-Online-x86_64-QU2-Media1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The advantage is that you can take kernel and initrd from the new installer
+medium and use it in a different context, for example as PXE boot files,
+without worrying about passing the correct boot options.</p>
+</div>
+<div class="paragraph">
+<p>Also, there are situations where you might not have an interactive boot
+loader. You can then prepare the initrd to suit your needs.</p>
+</div>
+<div class="paragraph">
+<p>For example, on IBM z Systems the created media are directly zIPL-bootable (the
+official SLE-15 media are not). If you turn off manual mode and add
+all necessary settings, you can use these media without any console
+interaction:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --boot "-manual" \
+  --initrd-config "autoyast=https://example.com/foo" \
+  SLE-15-SP6-Online-s390x-GM-Media1.iso
+media style suse, variant install
+Repositories:
+  SLES15-SP6 [15.6-0]
+Warning: more than one kernel/initrd pair to choose from
+(Use '--arch' option to select a different one.)
+Using boot/s390x/linux &amp; boot/s390x/initrd.
+assuming repo-md sources
+using signing key, keyid = 7B0EC6208CA8E305
+zIPL bootable (s390x)
+El-Torito legacy bootable (x86_64)
+El-Torito legacy bootable (s390x)
+building: 100%
+calculating sha256...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_onlinenetwork_installation_media_from_full_media">Create online/network installation media from full media</h3>
+<div class="paragraph">
+<p>There are two types of network-based installation media:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>media that contain the installer (online media)</p>
+</li>
+<li>
+<p>smaller media that do not contain the installer (network media)</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To avoid confusion, in this document the first type will be referred to as online media, the second as network media.</p>
+</div>
+<div class="paragraph">
+<p>Both variants do not contain the installation software repository.</p>
+</div>
+<div class="paragraph">
+<p>There is a third type of installation media: offline media that contain installer and software repository,
+here referred to as full media.</p>
+</div>
+<div class="paragraph">
+<p>Examples for the first variant are SLE online media or Fedora netinst media. The second variant is
+used by Leap and Tumbleweed NET media. Note that for the second variant even the installer
+is loaded via network - that is, there must be a URL pointing at some
+location providing the installer for download.</p>
+</div>
+<div class="paragraph">
+<p>Note that the steps in the examples below look similar, details differ mainly due to the fact
+that three different installation programs are used:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>SLE-15, Leap-15, Tumbleweed: YaST</p>
+</li>
+<li>
+<p>SLE-16, Leap-16, (future) Tumbleweed: Agama</p>
+</li>
+<li>
+<p>Multi-Linux, Fedora, RHEL: Anaconda</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at some examples that create online and network media from full media.</p>
+</div>
+<div class="sect3">
+<h4 id="_1_sle15_sle_16_leap_16_online_media">1. SLE15, SLE-16, Leap-16 online media</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --micro \
+  SLE-15-SP6-Full-x86_64-GM-Media1.iso</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Option <code>--micro</code> will make <code>mkmedia</code> remove all files except the installer
+and those needed for booting. For SLE media you do not need to pass a
+repository because the repository information is read from a registration
+server. Leap-16 has the online repository location already in its configuration.
+<code>new.iso</code> is equivalent to SLE/Leap online media.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_tumbleweed_leap_15_online_media_not_officially_available">2. Tumbleweed, Leap-15 online media (not officially available)</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --micro \
+  --defaultrepo=https://download.opensuse.org/tumbleweed/repo/oss \
+  openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250614-Media.iso</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As in the last example, option <code>--micro</code> will keep the installer on the medium.
+But for Tumbleweed and Leap-15 you need to provide the repository location using the <code>--defaultrepo</code> option.</p>
+</div>
+<div class="paragraph">
+<p>The difference to the Tumbleweed network medium which is available for download is
+that you can use this image for installing any Tumbleweed snapshot.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_3_multi_linux_fedora_online_media">3. Multi-Linux, Fedora online media</h4>
+<div class="paragraph">
+<p>If there is no repository on the installation medium, the installer will
+usually automatically try to get an online repository from a mirror list.</p>
+</div>
+<div class="paragraph">
+<p>This works nice for Fedora, for example; all you have to do is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --micro \
+  Fedora-Server-dvd-x86_64-42-1.1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If an online repository cannot be found automatically or you have your own repository set up anyway, specify the online repository explicitly:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --micro \
+  --initrd-config inst.repo=https://example.com/foo \
+  SUSE-Liberty-Linux-9.6.DVD-x86_64.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>inst.repo</code> option should point to a location containing the unpacked full media.</p>
+</div>
+<div class="paragraph">
+<p>The media produced in this way are equivalent to the available netinst/netinstall media.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_4_tumbleweed_leap_15_network_media_no_installer">4. Tumbleweed, Leap-15 network media (no installer)</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --nano \
+  --defaultrepo=https://download.opensuse.org/distribution/leap/15.6/repo/oss \
+  openSUSE-Leap-15.6-DVD-x86_64-Build710.3-Media.iso</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Option <code>--nano</code> leaves only files needed for booting kernel and initrd. In contrast to <code>--micro</code> it
+also removes the installer from the medium.</p>
+</div>
+<div class="paragraph">
+<p>As in the Tumbleweed online example, you also need to set the repository location. The installer is loaded
+from a predefined location (from the <code>boot/&lt;ARCH&gt;</code> sub-directory) within the repository.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_5_leap_16_sle_16_network_media_no_installer_not_officially_available">5. Leap-16, SLE-16 network media (no installer, not officially available)</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --nano \
+  --initrd-config root=live:https://example.com/foo/squashfs.img \
+  Leap-16.0-offline-installer-x86_64.install.iso</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Agama-based media like Leap-16 or SLE-16 you have to provide the Live root file system
+via network yourself - there is currently no official download location.
+For this, copy <code>LiveOS/squashfs.img</code> from the full medium and make it available on a server.</p>
+</div>
+<div class="paragraph">
+<p>Leap-16 has a default repository location in its config, you do not need to set it.
+But if you want to pass your own repository, use the <code>inst.install_url</code> setting like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --nano \
+  --initrd-config root=live:https://example.com/foo/squashfs.img \
+  --initrd-config inst.install_url=https://download.opensuse.org/distribution/leap/16.0/repo/oss \
+  Leap-16.0-offline-installer-x86_64.install.iso</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_6_multi_linux_fedora_network_media_not_officially_available">6. Multi-Linux, Fedora network media (not officially available)</h4>
+<div class="paragraph">
+<p>For network media you have to prepare a server location containing the unpacked full medium.
+Say, it is available at <code>https://example.com/foo</code>.</p>
+</div>
+<div class="paragraph">
+<p>Then use the <code>inst.stage2</code> option to point at that location. The installer will be downloaded from there.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --nano \
+  --boot -inst.stage2 \
+  --initrd-config inst.stage2=https://example.com/foo \
+  Fedora-Server-dvd-x86_64-42-1.1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that since <code>inst.stage2</code> is used in the boot config, the command removes it from there. Otherwise setting <code>inst.stage2</code>
+in the initrd would have no effect.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, you could instead do:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --nano \
+  --boot inst.stage2=https://example.com/foo \
+  Fedora-Server-dvd-x86_64-42-1.1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Multi-Linux - where you have to set the repository location explicitly - the command would look like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --nano \
+  --boot -inst.stage2 \
+  --initrd-config inst.stage2=https://example.com/foo \
+  --initrd-config inst.repo=https://example.com/foo \
+  SUSE-Liberty-Linux-9.6.DVD-x86_64.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that <code>inst.stage2</code> and <code>inst.repo</code> point at the same location.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_customized_sle_15_media_containing_selected_products_and_sle_modules">Create customized SLE-15 media containing selected products and SLE-modules</h3>
+<div class="paragraph">
+<p>First, get a list of available products and modules:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --list-repos SLE-15-SP6-Full-x86_64-GM-Media1.iso
+media style suse, variant install
+Repositories:
+  Basesystem-Module [15.6-0]
+  Containers-Module [15.6-0]
+  Desktop-Applications-Module [15.6-0]
+  Development-Tools-Module [15.6-0]
+  HPC-Module [15.6-0]
+  Legacy-Module [15.6-0]
+  Live-Patching [15.6-0]
+  Public-Cloud-Module [15.6-0]
+  Python-3-Module [15.6-0]
+  SUSE-Real-Time-Module [15.6-0]
+  SAP-Applications-Module [15.6-0]
+  SAP-Business-One-Module [15.6-0]
+  Server-Applications-Module [15.6-0]
+  Transactional-Server-Module [15.6-0]
+  Web-Scripting-Module [15.6-0]
+  SLEHA15-SP6 [15.6-0]
+  SLE-15-SP6-RT [15.6-0]
+  SLED15-SP6 [15.6-0]
+  SLES15-SP6 [15.6-0]
+  SLE-15-SP6-SAP [15.6-0]
+  SLEWE15-SP6 [15.6-0]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There is no enforced naming scheme but by convention modules end in <code>-Module</code>, the other repositories are products.</p>
+</div>
+<div class="paragraph">
+<p>You can activate exactly one product and any number of modules.</p>
+</div>
+<div class="paragraph">
+<p>For example, SLES-15 + Basesystem + Containers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --include-repos SLES15-SP6,Basesystem-Module,Containers-Module \
+  SLE-15-SP6-Full-x86_64-GM-Media1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that some modules might depend on others - but there is no automatic dependency resolution.</p>
+</div>
+<div class="paragraph">
+<p>If you prefer, you can even have all repositories automatically enabled:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --include-repos SLES15-SP6,Basesystem-Module,Containers-Module \
+  --enable-repos yes \
+  SLE-15-SP6-Full-x86_64-GM-Media1.iso
+...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_create_suse_media_with_updated_installer_using_tftpboot_installation_product_packages">Create SUSE media with updated installer using tftpboot-installation-&lt;PRODUCT&gt; packages</h3>
+<div class="paragraph">
+<p>Sometimes you would like to have installation media using the latest
+installer - but the release cycle for updated media is too slow.</p>
+</div>
+<div class="paragraph">
+<p>There is, however, a group of packages updated regularly:
+<code>tftpboot-installation-&lt;PRODUCT&gt;-&lt;ARCH&gt;.rpm</code>. They are intended to setup a
+tftp installation server for <code>&lt;PRODUCT&gt;</code> on architecture <code>&lt;ARCH&gt;</code>. An example
+might be <code>tftpboot-installation-SLE-15-SP6-x86_64.rpm</code>.</p>
+</div>
+<div class="paragraph">
+<p>These packages contain all files needed to build an installation medium. <code>mkmedia</code> can use them directly:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  SLE-15-SP6-Full-x86_64-GM-Media1.iso \
+  tftpboot-installation-SLE-15-SP6-x86_64.rpm
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that you pass the package as argument <strong>after</strong> the ISO image. This is because
+files in later arguments overwrite files from previous arguments.</p>
+</div>
+<div class="paragraph">
+<p>On a side note, you can build online and network media directly from <code>tftpboot-installation-&lt;PRODUCT&gt;</code>
+packages without needing any ISO image to start with. This is the only case where <code>mkmedia</code> does not
+require an already existing medium.</p>
+</div>
+<div class="paragraph">
+<p>But you must set the volume id explicitly (choose one freely) and you must use either <code>--micro</code> (to get an online medium) or
+<code>--nano</code> (to get a network medium). And remember to set repository and installer download locations as needed.</p>
+</div>
+<div class="paragraph">
+<p>For example, to build a SLE-15-SP6 online medium:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --micro \
+  --volume foobar \
+  tftpboot-installation-SLE-15-SP6-x86_64.rpm
+...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_update_kernel_modules_and_firmware_on_installation_media">Update kernel, modules, and firmware on installation media</h3>
+<div class="paragraph">
+<p>Note that this is not about installing an updated kernel on the target
+system. That would be a completely unrelated task.</p>
+</div>
+<div class="paragraph">
+<p>This is about having a new kernel active during the installation process.</p>
+</div>
+<div class="paragraph">
+<p>The typical layout would have the kernel directly on the medium, modules and
+firmware in the initrd and, for Live media, kernel, firmware, and modules
+also in the Live root file system.</p>
+</div>
+<div class="paragraph">
+<p><code>mkmedia</code> takes care of updating the files in all these locations.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at some use-cases.</p>
+</div>
+<div class="sect3">
+<h4 id="_1_update_kernel_keep_module_config">1. Update kernel, keep module config</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel kernel-default-6.15.2-1.1.x86_64.rpm \
+  -- \
+  openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+media style suse, variant install
+Repositories:
+  openSUSE [20250522-0]
+assuming repo-md sources
+using signing key, keyid = 7B0EC6208CA8E305
+kernel firmware: keep existing version
+kernel firmware: 1859/2057 files updated
+kernel version: 6.14.6-1-default --&gt; 6.15.2-1-default
+kernel modules added:
+  crc16, dev-sync-probe, drm_gpusvm
+kernel modules missing:
+  chacha-x86_64, crc4, libchacha, libchacha20poly1305, libpoly1305,
+  poly1305-x86_64
+initrd base modules:
+  loop, squashfs, lz4_decompress, lz4_compress, lz4hc_compress, 842_compress,
+  842_decompress, xxhash, zstd_decompress, zram, ext4, crc16, mbcache, jbd2
+El-Torito legacy bootable (x86_64)
+UEFI image: boot/x86_64/efi
+El-Torito UEFI bootable (x86_64)
+building: 100%</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This updates kernel and modules - but not firmware. <code>mkmedia</code> will try to
+keep the existing module config - but the new kernel package might have a
+slightly different list of modules. The output will tell you the changes
+made to the modules included in the initrd. You can still fine-tune the module config
+using the <code>--modules</code> option.</p>
+</div>
+<div class="paragraph">
+<p>Note that module dependencies are automatically resolved.</p>
+</div>
+<div class="paragraph">
+<p>Note also the isolated <code>--</code> in the argument list - this is necessary because
+the <code>--kernel</code> option accepts a variable number of arguments.</p>
+</div>
+<div class="paragraph">
+<p>Trying a kernel update with Leap-15.6, there is a problem, though:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel kernel-default-6.4.0-150600.21.3.x86_64.rpm \
+  -- \
+  openSUSE-Leap-15.6-DVD-x86_64-Build630.1-Media.iso
+media style suse, variant install
+Repositories:
+  openSUSE-Leap [15.6-1]
+assuming repo-md sources
+using signing key, keyid = 7B0EC6208CA8E305
+kernel firmware: keep existing version
+kernel firmware: 1179/1289 files updated
+kernel version: 6.4.0-150600.9-default --&gt; 6.4.0-150600.21-default
+kernel modules missing:
+  8390, 88pg86x, 9pnet_fd, 9pnet_rdma, a100u2w, acer-wireless, acerhdf,
+  acpi_configfs, acpi_tad, act8865-regulator, ad5398, ad714x, ad714x-i2c,
+  [... lots of missing modules ...]
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the huge list of missing modules - what&#8217;s going on? The answer is that on Leap the kernel package is split into three separate
+packages: <code>kernel-default</code>, <code>kernel-default-extra</code>, and <code>kernel-default-optional</code>. You must provide all kernel-related package.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s try again:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel kernel-default-6.4.0-150600.21.3.x86_64.rpm \
+  kernel-default-extra-6.4.0-150600.21.3.x86_64.rpm \
+  kernel-default-optional-6.4.0-150600.21.3.x86_64.rpm \
+  -- \
+  openSUSE-Leap-15.6-DVD-x86_64-Build630.1-Media.iso
+media style suse, variant install
+Repositories:
+  openSUSE-Leap [15.6-1]
+assuming repo-md sources
+using signing key, keyid = 7B0EC6208CA8E305
+kernel firmware: keep existing version
+kernel firmware: 1680/1922 files updated
+kernel version: 6.4.0-150600.9-default --&gt; 6.4.0-150600.21-default
+kernel modules added:
+  drm_gpuvm
+kernel modules missing:
+  sha3_generic
+initrd base modules:
+  loop, squashfs, lz4_decompress, xxhash, zstd_decompress, zram, ext4, crc16,
+  mbcache, jbd2
+El-Torito legacy bootable (x86_64)
+UEFI image: boot/x86_64/efi
+El-Torito UEFI bootable (x86_64)
+building: 100%</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This time it worked much better.</p>
+</div>
+<div class="paragraph">
+<p>In general, openSUSE and SLE use package names like <code>kernel-default</code>, <code>kernel-default-extra</code>, and <code>kernel-default-optional</code> for kernel and modules
+and <code>kernel-firmware-*</code> for kernel firmware. If you have specialized KMP packages (<code>*-kmp-default</code>), you can use them, too.</p>
+</div>
+<div class="paragraph">
+<p>Multi-Linux uses <code>kernel-core</code>, <code>kernel-modules</code>, <code>kernel-modules-core</code>, <code>kernel-modules-extra</code>, and <code>kernel-modules-internal</code> for kernel and modules
+and  <code>*-firmware</code> for kernel firmware.</p>
+</div>
+<div class="paragraph">
+<p>Here is an example of updating the kernel on a Multi-Linux installation medium:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel kernel-core-5.14.0-570.12.1.el9_6.x86_64.rpm \
+  kernel-modules-5.14.0-570.12.1.el9_6.x86_64.rpm \
+  kernel-modules-core-5.14.0-570.12.1.el9_6.x86_64.rpm \
+  -- \
+  SUSE-Liberty-Linux-9.5.DVD-x86_64.iso
+media style rh, variant install
+Repositories:
+  AppStream [1735055691]
+  BaseOS [1735055669]
+assuming repo-md sources
+using signing key, keyid = 7B0EC6208CA8E305
+kernel firmware: keep existing version
+kernel firmware: 1095/1366 files updated
+kernel version: 5.14.0-503.16.1.el9_5.x86_64 --&gt; 5.14.0-570.12.1.el9_6.x86_64
+kernel modules added:
+  libeth, libie
+kernel modules missing:
+  cuse, t10-pi
+Identified Live system: images/install.img
+El-Torito legacy bootable (x86_64)
+UEFI image: images/efiboot.img
+El-Torito UEFI bootable (x86_64)
+building: 100%</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_add_kernel_modules">2. Add kernel modules</h4>
+<div class="paragraph">
+<p>Maybe you do not need a kernel upgrade but only need some additional modules to
+run the installation successfully.</p>
+</div>
+<div class="paragraph">
+<p>For that, get the kernel package that was used to build the ISO - you can
+find it on the full medium itself, for example.</p>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s what happens on Leap-15.6 trying to add the (random example) <code>uio_hv_generic</code> module:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel kernel-default-6.4.0-150600.21.3.x86_64.rpm \
+  kernel-default-extra-6.4.0-150600.21.3.x86_64.rpm \
+  kernel-default-optional-6.4.0-150600.21.3.x86_64.rpm \
+  --modules uio_hv_generic \
+  -- \
+  openSUSE-Leap-15.6-DVD-x86_64-Build710.3-Media.iso
+...
+kernel firmware: keep existing version
+kernel firmware: 1181/1289 files updated
+kernel version: 6.4.0-150600.21-default --&gt; 6.4.0-150600.21-default
+kernel modules added:
+  uio_hv_generic
+initrd base modules:
+  loop, squashfs, lz4_decompress, xxhash, zstd_decompress, zram, ext4, crc16,
+  mbcache, jbd2
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note again the isolated <code>--</code> as the <code>--modules</code> option also accepts a variable number of arguments.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_3_update_kernel_firmware">3. Update kernel firmware</h4>
+<div class="paragraph">
+<p>Firmware packages are treated as kernel packages and can be passed using the <code>--kernel</code> option. There are
+a lot of individual firmware packages, typically named <code>kernel-firmware-*.rpm</code></p>
+</div>
+<div class="paragraph">
+<p>If you do not pass any firmware package, the existing firmware files are
+kept. If you pass at least one firmware package, existing firmware files are discarded and only firmware packages
+you passed via <code>--kernel</code> option are used.</p>
+</div>
+<div class="paragraph">
+<p>Note that you cannot select individual firmware files. Instead, firmware files are automatically selected based on the requirements of
+kernel modules.</p>
+</div>
+<div class="paragraph">
+<p>Going back to the Tumbleweed example above but adding firmware packages, too:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel kernel-default-6.15.2-1.1.x86_64.rpm \
+  kernel-firmware-*.rpm \
+  -- \
+  openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+...
+kernel firmware: 1839/2053 files updated
+kernel version: 6.14.6-1-default --&gt; 6.15.2-1-default
+kernel modules added:
+  crc16, dev-sync-probe, drm_gpusvm
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It can happen, though, that firmware information in kernel modules is
+incorrect. In this case you might want to have firmware files added even
+though there is no dependency specified in kernel modules.</p>
+</div>
+<div class="paragraph">
+<p>To do this, add the necessary firmware package to the initrd:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --initrd kernel-firmware-qlogic-20250206-2.1.noarch.rpm \
+  openSUSE-Tumbleweed-DVD-x86_64-Snapshot20250522-Media.iso
+...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_4_kernel_packages_usrmerge_or_not">4. Kernel packages: usrmerge or not?</h4>
+<div class="paragraph">
+<p>For SUSE, there are two distinct types of kernel packages, depending on whether or not the so-called usrmerge has happened.</p>
+</div>
+<div class="paragraph">
+<p>usrmerge (roughly) describes a file system layout change to consolidate
+files below the <code>/usr</code> directory and to assume that <code>/usr</code> will be read-only.</p>
+</div>
+<div class="paragraph">
+<p>For kernel and firmware packages this means a change from <code>/lib</code> to <code>/usr/lib</code>.</p>
+</div>
+<div class="paragraph">
+<p>Leap-15 and SLE-15 were prior to usrmerge, Tumbleweed, Leap-16 and SLE-16 are after the change.</p>
+</div>
+<div class="paragraph">
+<p>The good news is that <code>mkmedia</code> can compensate and will move files to their correct place if you attempt a cross-usrmerge change.</p>
+</div>
+<div class="paragraph">
+<p>So, you can build SLE-15 media using a kernel from SLE-16 or even from Tumbleweed, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --kernel Tumbleweed/kernel-default-6.15.2-1.1.x86_64.rpm \
+  Tumbleweed/kernel-firmware-*.rpm \
+  -- \
+  SLE-15-SP6-Full-x86_64-GM-Media1.iso
+...
+kernel firmware: 1697/1840 files updated
+kernel version: 6.4.0-150600.21-default --&gt; 6.15.2-1-default
+kernel modules added:
+  asn1_encoder, drm_panel_backlight_quirks, hsmp_common, intel-vsec,
+  intel-vsec_tpmi, libeth, libie, liquidio-core, mxm-wmi, nls_ucs2_utils,
+  nouveau, pcmcia, qcom-phy-lib, rpmb-core, rtw88_8723x, scsi_common,
+  sdhci-uhs2, snd-soc-sdca, spi-pxa2xx-core, tee, trusted
+kernel modules missing:
+  cfb, chacha-x86_64, chtls, cirrus, cpu5wdt, crc32-pclmul, crc32c-intel,
+  crc64, crc64-rocksoft, crc64_rocksoft_generic, dm-least-pending,
+  ecdh_generic, eeprom_93cx6, einj, faulty, fscache, gf128mul,
+  i2c-amd756-s4882, i2c-designware-core, i2c-designware-platform,
+  i2c-nforce2-s4985, intel_punit_ipc, intel_sdsi, intel_vsec, intel_vsec_tpmi,
+  keywrap, ledtrig-audio, lib80211, lib80211_crypt_ccmp, lib80211_crypt_tkip,
+  lib80211_crypt_wep, libchacha, libchacha20poly1305, libcrc32c, libpoly1305,
+  mcs5000_ts, mfd-core, mk712, ofb, pinctrl-cherryview, poly1305-x86_64,
+  regmap-i2c, reiserfs, sm2_generic, sundance, t10-pi, vmac
+initrd base modules:
+  loop, squashfs, lz4_decompress, xxhash, zstd_decompress, zram, ext4, crc16,
+  mbcache, jbd2
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Due to the significant kernel version jump, the module config is noticeably
+different and there are no guarantees things work smoothly.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_integrate_changes_into_installation_system_or_initrd">Integrate changes into installation system or initrd</h3>
+<div class="paragraph">
+<p>Starting the installation program is a two-stage process. First, kernel and
+initrd are loaded. Then, in the initrd, a program (dracut or linuxrc) loads the complete
+installation system and starts the installer.</p>
+</div>
+<div class="paragraph">
+<p>So there are two places you might want to change: the initrd (using the <code>--initrd</code> option) and the
+installation system / Live root file system (using the <code>--instsys</code> or <code>--live-root</code> option) - you can
+use either, they are synonyms.</p>
+</div>
+<div class="paragraph">
+<p>If you are unsure, change in both places.</p>
+</div>
+<div class="sect3">
+<h4 id="_1_update_packages">1. Update packages</h4>
+<div class="paragraph">
+<p>For example, to update the hardware detection library used by YaST:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --initrd hwinfo-21.87-150500.3.6.1.x86_64.rpm \
+  SLE-15-SP6-Online-x86_64-GM-Media1.iso
+...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_change_files_not_in_packages">2. Change files not in packages</h4>
+<div class="paragraph">
+<p>Sometimes you may want to add your own files. For example, you want to include your
+own iSCSI client config. It usually lives in the /etc/iscsi directory.</p>
+</div>
+<div class="paragraph">
+<p>For this, prepare the directory structure along with your config files in a temporary location, for example in
+<code>/tmp/foo</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tree /tmp/foo
+/tmp/foo
+└── etc
+    └── iscsi
+        ├── initiatorname.iscsi
+        └── iscsid.conf</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then add it:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --initrd /tmp/foo \
+  --live-root /tmp/foo \
+  SLES-16.0-Online-x86_64-GM.install.iso
+...</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_integrate_driver_updates">Integrate driver updates</h3>
+<div class="paragraph">
+<p>Driver updates (DUDs) come in a special format. <code>mkmedia</code> recognizes this
+format and can add them to the initrd or apply them directly to the ISO image.</p>
+</div>
+<div class="paragraph">
+<p>The advantage compared to using a <code>dud</code> or <code>inst.dud</code> boot option is that this way you do not have to download it
+during the installation process and there is no signature check because initrd content is implicitly trusted.</p>
+</div>
+<div class="paragraph">
+<p>To add a DUD to the initrd, do:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --initrd foobar.dud \
+  SLE-15-SP6-Online-x86_64-GM-Media1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will make the DUD automatically available during the installation
+process. You do not have to specify it separately on the kernel command
+line. The DUD is applied during the installation.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively, you can apply a DUD directly to the ISO image using the <code>--apply-dud</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --apply-dud foobar.dud \
+  SLE-15-SP6-Online-x86_64-GM-Media1.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The difference to using <code>--initrd</code> is that the DUD is applied by <code>mkmedia</code> when creating the new ISO image.
+This has the advantage that the DUD can also describe changes to the medium itself. For example, updating the kernel
+used during installation or an update to the boot loader used for booting the installation medium.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_integrate_add_on_repositories">Integrate add-on repositories</h3>
+<div class="paragraph">
+<p>If you have additional software (or a bunch of package updates) for the
+target system (not the installation system) that have to be installed,
+<code>mkmedia</code> can help you to have them available as add-on repository during
+the installation.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --addon emacs-30.1-6.1.x86_64.rpm \
+  --addon-name "my emacs" \
+  SLE-15-SP6-Full-x86_64-GM-Media1.iso
+...
+creating add-on "my emacs" (alias my_emacs):
+  - emacs-30.1-6.1.x86_64.rpm
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This currently works only for YaST-based installation media like SLE-15, Leap-15, or Tumbleweed, though.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_modify_files_on_the_installation_medium">Modify files on the installation medium</h3>
+<div class="paragraph">
+<p>If you need to apply changes to the installation medium not covered so far:
+you can also change or add directories and files directly on the installation
+medium.</p>
+</div>
+<div class="paragraph">
+<p>For this, specify several source arguments to <code>mkmedia</code>. All these sources
+(can be ISO images or plain directories) are combined, with later specified
+sources taking precedence.</p>
+</div>
+<div class="paragraph">
+<p>For example, to replace the parmfile on an s390x medium with your own version,
+create the necessary directory structure and copy your file into the right spot:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkdir -p /tmp/foo/boot/s390x
+# cp my_special_parmfile /tmp/foo/boot/s390x/parmfile
+# mkmedia --create new.iso \
+  SLE-15-SP6-Full-s390x-GM-Media1.iso \
+  /tmp/foo
+...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_advanced_examples">Advanced examples</h3>
+<div class="sect3">
+<h4 id="_1_create_pure_disk_image_no_iso_image">1. Create pure disk image (no ISO image)</h4>
+<div class="paragraph">
+<p>Usually, installation media are produced as so-called hybrid image: they are
+both an ISO image that could in theory be burned to a DVD and they are also a
+raw disk image that can be copied with <code>dd</code> to a disk device.</p>
+</div>
+<div class="paragraph">
+<p>This is very flexible but gets in the way if you intend to use the install
+medium also as installation target disk or if you want to have additional
+partitions on the installation medium.</p>
+</div>
+<div class="paragraph">
+<p><code>mkmedia</code> lets you create pure disk images: there&#8217;s no longer an ISO9660
+file system spanning the entire image. You can choose whether you want a GPT
+or classic MBR partition table.</p>
+</div>
+<div class="paragraph">
+<p>This does not work for all architectures and all boot methods, though. UEFI-based
+systems do work, however.</p>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.img \
+  --no-iso --gpt \
+  SLES-16.0-Online-x86_64-GM.install.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Multi-Linux media, you need to force a sanitized partition layout adding the <code>--hybrid-fs=iso</code> option:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.img \
+  --no-iso --gpt --hybrid-fs=iso \
+  SUSE-Liberty-Linux-9.6.netinstall-x86_64.iso
+...</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_2_update_shim_or_grub">2. Update shim or grub</h4>
+<div class="paragraph">
+<p>In general, <code>mkmedia</code> does not recreate the entire boot loader setup when building new media.
+Instead, it relies on existing boot loader artifacts.</p>
+</div>
+<div class="paragraph">
+<p>You can, however, replace the boot loader if it is just a regular file on
+the medium. For example, in UEFI-based setups.</p>
+</div>
+<div class="paragraph">
+<p>UEFI keeps its boot config in a <code>EFI/BOOT</code> directory, which could look like (using a SLE-16 medium):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tree EFI
+EFI/
+└── BOOT
+    ├── MokManager.efi
+    ├── bootx64.efi
+    ├── grub.cfg
+    └── grub.efi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>bootx64.efi</code> would be the boot loader - in this case shim. grub would be <code>grub.efi</code>.</p>
+</div>
+<div class="paragraph">
+<p>Prepare the same directory structure in a temporary location, say <code>/tmp/foo</code>.</p>
+</div>
+<div class="paragraph">
+<p>Update grub by copying <code>/usr/share/grub2/x86_64-efi/grub.efi</code> from package <code>grub2-x86_64-efi</code> to <code>/tmp/foo/EFI/BOOT/grub.efi</code> and
+shim by copying <code>/usr/share/efi/x86_64/shim.efi</code> from package <code>shim</code> to <code>/tmp/foo/EFI/BOOT/bootx64.efi</code>.</p>
+</div>
+<div class="paragraph">
+<p>This would then look like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># tree /tmp/foo
+/tmp/foo/
+└── EFI
+    └── BOOT
+        ├── bootx64.efi
+        └── grub.efi</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now rebuild the installation medium passing <code>/tmp/foo</code> as additional source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  SLES-16.0-Online-x86_64-RC2.install.iso \
+  /tmp/foo
+media style suse, variant live
+Repositories:
+assuming repo-md sources
+El-Torito legacy bootable (x86_64)
+UEFI image: boot/x86_64/loader/efiboot.img
+updating UEFI image: boot/x86_64/loader/efiboot.img
+El-Torito UEFI bootable (x86_64)
+building: 100%</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>/tmp/foo</code> will overwrite existing files in <code>SLES-16.0-Online-x86_64-RC2.install.iso</code> - since the second argument has higher priority.</p>
+</div>
+<div class="paragraph">
+<p>Also, <code>mkmedia</code> is aware that a copy of the UEFI config exists in a UEFI
+boot image - which is used for El-Torito booting and happens to be also the EFI System Partition. It will
+automatically sync the changes to these places as well - note the &#8216;updating UEFI image&#8217; line in the <code>mkmedia</code> output above.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_3_sign_your_own_media">3. Sign your own media</h4>
+<div class="paragraph">
+<p><code>mkmedia</code> supports signing your newly created media with your own key. This
+allows you to keep track of the authenticity even of your self-made media.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at an example. Starting with an officially provided image, we can see that it is signed:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkmedia SLES-16.0-Online-x86_64-RC2.install.iso
+        app: SLES-16.0-Online-x86_64-Build116.2
+   iso size: 657896 kiB
+        pad: 300 kiB
+  partition: start 0.5 kiB, size 658431.5 kiB
+   checking: 100%
+     result: iso sha256 ok, partition sha256 ok
+     sha256: 598d24d0c11f89e07aba5a6fb43069323967ba20d24ee41b52d8a10fda6e5a30
+  signature: ok
+  signed by: ALP Package Signing Key &lt;build-alp@suse.de&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now, let&#8217;s make some small change:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --sign-image --sign-key-id susetest \
+  --initrd-config inst.config_url=https://example.com/agama.yaml \
+  SLES-16.0-Online-x86_64-RC2.install.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can verify whether the result is technically ok:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># verifymedia new.iso
+Verifying: new.iso
+Check results: [✔] = ok, [✘] = bad, [!] = not ideal
+[✔] image has ISO-9660 file system
+...
+[✔] ISO is signed</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Looks good, all checks passed!</p>
+</div>
+<div class="paragraph">
+<p>Now, export the public part of the key:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># gpg --armor --export susetest &gt; susetest.pub</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You are now ready to verify the signature of the new image:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkmedia --key-file susetest.pub new.iso
+        app: SLES-16.0-Online-x86_64-Build116.2
+   iso size: 657900 kiB
+        pad: 300 kiB
+  partition: start 0.5 kiB, size 658431.5 kiB
+   checking: 100%
+     result: iso sha256 ok, partition sha256 ok
+     sha256: c21e836f216c9e6400dee1c247c852c54ad6188fb532965774b175ea0474a882
+  signature: ok
+  signed by: susetest</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_4_sign_multi_linux_fedora_rhel_media">4. Sign Multi-Linux, Fedora, RHEL media</h4>
+<div class="paragraph">
+<p>Media signing works even for Multi-Linux, Fedora, and RHEL media. Though
+you cannot use <code>checkisomd5</code> to verify signatures, <code>checkmedia</code> does work.
+<code>checkisomd5</code> can only verify the embedded md5 digest.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s look at an example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># mkmedia --create new.iso \
+  --sign-image --sign-key-id susetest \
+  --initrd-config inst.ks=https://example.com/foo.ks \
+  SUSE-Liberty-Linux-9.6.netinstall-x86_64.iso
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can export the public key needed for signature checking as shown in the last section.</p>
+</div>
+<div class="paragraph">
+<p>Both <code>checkmedia</code> and <code>checkisomd5</code> work with the modified installation medium:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkmedia --key-file susetest.pub new.iso
+        app: SL_LINUX
+   iso size: 1236360 kiB
+       skip: 30 kiB
+   checking: 100%
+     result: iso md5 ok, fragments md5 ok
+        md5: b2dc9874c4070537184c177e6297992e
+  signature: ok
+  signed by: susetest</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># checkisomd5 -v new.iso
+new.iso:   bef771546234cd65a7e50372562949bb
+Fragment sums: 17af482bf6a5a6b4e6fa737bf4df6e5b1cd3ac45d1ac2fcec5ec17fb8d77
+Fragment count: 20
+Supported ISO: no
+Press [Esc] to abort check.
+Checking: 100.0%
+
+The media check is complete, the result is: PASS.
+
+It is OK to use this media.</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading">Further reading</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>For all that made it this far, here are some links to technical background documentation</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Media signing and digest meta data<br>
+<a href="https://github.com/openSUSE/checkmedia/blob/master/README.adoc" class="bare">https://github.com/openSUSE/checkmedia/blob/master/README.adoc</a></p>
+</li>
+<li>
+<p>Hybrid mode ISO image layout details<br>
+<a href="https://github.com/openSUSE/mksusecd/blob/master/layout.md" class="bare">https://github.com/openSUSE/mksusecd/blob/master/layout.md</a></p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2026-03-18 18:13:17 +0100
+</div>
+</div>
+</body>
+</html>

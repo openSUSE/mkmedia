@@ -481,7 +481,7 @@ both file system variants you can use the **--volume1** option to set a differen
 to be used for the whole image.
 
 For a detailed technical description of the ISO image layout in hybrid mode,
-see https://github.com/openSUSE/mksusecd/blob/master/layout.md.
+see https://github.com/openSUSE/mkmedia/blob/master/layout.md.
 
 There are several options to control the hybrid mode layout:
 
@@ -547,11 +547,33 @@ You can also add a signature later using *tagmedia*.
 
 === Boot option and initrd config option notes
 
-The argument to *--boot* is a space-separated list of boot options, e.g. *--boot="foo=1 bar zap=2"*.
+The argument to *--boot* is a space-separated list of boot options, e.g. *--boot "foo=1 bar zap=2"*.
 If an option is already used in the existng boot
 config, the option is modified in place. If it is a new option, it is appended to the
 list of boot options. You can also remove options by prefixing them with a minus sign, for example
-*--boot="-foo -bar zap=123"* would remove options *foo* and *bar* and add/modify opion *zap*.
+*--boot "-foo -bar zap=123"* would remove options *foo* and *bar* and add/modify opion *zap*.
+
+The boot config is modified in all boot loader config files on the medium.
+Notably, on s390x, all parmfiles are adjusted.
+
+There is some special magic implemented when it comes to boot options than
+can validly be specified more than once. For example *--boot "console=ttyS0
+console=ttyS1"*. If a boot option is specified at least twice, it is assumed
+that the intention is to have them all added to the kernel command line. In
+this case, these options are all added without replacing any existing
+option of the same name. If you intend to replace an existing old option
+of the same name, remove the old entry explicitly with *"-OPTION"*.
+
+For example, assuming there is an existing boot loader config with options
+"console=ttyS0". Then
+
+1. *--boot "console=ttyS1"* results in "console=ttyS1"
+2. *--boot "console=ttyS1 console=ttyS2"* results in "console=ttyS0 console=ttyS1 console=ttyS2"
+3. *--boot "-console console=ttyS1 console=ttyS2"* results in "console=ttyS1 console=ttyS2"
+
+This magic is turned off if there are quotes ("") used in any place in the boot options. For example
+*--boot "foo=\"X\""*. In this case, the entire boot option string is simply appended to any
+existing options verbatim.
 
 Boot options are often options intended for the installation program. For
 example, passing an AutoYaST profile. In some situations this might add up to
@@ -562,6 +584,8 @@ put them in config files in the initrd. This gives you a pre-configured initrd t
 can be used in various places without having to worry about getting all the boot
 options right.
 
+This is also a possible way to avoid lenghty parmfiles on s390x.
+
 Instead of *--boot foo=123* you can use *--initrd-config foo=123*. But watch out for the different
 syntax if you set more than one option:
 *--boot "foo=123 bar=abc"* vs. *--initrd-config foo=123 --initrd-config bar=abc*.
@@ -571,7 +595,7 @@ always override settings at the boot prompt). This means that if you intend to m
 from boot config to initrd config, make sure you remove the option from the boot config.
 
 For example, Fedora media set inst.stage2 (the installer root file system location) as boot option. To move it to
-the initrd, unset it there: *--boot=-inst.stage2* *--initrd-config inst.stage2=http://example.com/foo*.
+the initrd, unset it there: *--boot -inst.stage2* *--initrd-config inst.stage2=http://example.com/foo*.
 
 === Driver update notes
 
@@ -940,7 +964,7 @@ mkmedia --create foo.iso --live-root-size +1G live.iso
 mkmedia --create new.iso sles.iso tftpboot-installation-SLE.rpm
 ----
 
-Find more usage examples here: https://github.com/openSUSE/mksusecd/blob/master/HOWTO.md
+Find more usage examples here: https://github.com/openSUSE/mkmedia/blob/master/HOWTO.md
 
 == See Also
 
@@ -948,12 +972,14 @@ Find more usage examples here: https://github.com/openSUSE/mksusecd/blob/master/
 
 == Links
 
-- YaST, linuxrc options: https://en.opensuse.org/SDB:Linuxrc (linuxrc, YaST)
-- dracut options: https://github.com/dracutdevs/dracut/blob/master/man/dracut.cmdline.7.asc
-- Agama options: https://agama-project.github.io/docs/user/reference/boot_options
-- Anaconda options: https://anaconda-installer.readthedocs.io/en/latest/boot-options.html
-- driver update documentaion: https://github.com/openSUSE/mkdud/blob/master/README.md
-- more documentation: /usr/share/doc/packages/mksusecd
-- get latest version: https://github.com/openSUSE/mksusecd?tab=readme-ov-file#downloads
-- mksusecd web site: https://github.com/openSUSE/mksusecd
+- extensive usage summary: https://www.suse.com/c/make-your-own-suse-dvd-tooling-for-suse-and-multi-linux-installation-live-media +
+- the same, locally: file:///usr/share/doc/packages/mksusecd/suse_blog.html +
+- mkmedia web site: https://github.com/openSUSE/mkmedia +
+- more documentation: file:///usr/share/doc/packages/mksusecd +
+- get latest version: https://github.com/openSUSE/mkmedia?tab=readme-ov-file#downloads +
+- driver update documentaion: https://github.com/openSUSE/mkdud/blob/master/README.md +
+- YaST, linuxrc options: https://en.opensuse.org/SDB:Linuxrc (linuxrc, YaST) +
+- dracut options: https://github.com/dracutdevs/dracut/blob/master/man/dracut.cmdline.7.asc +
+- Agama options: https://agama-project.github.io/docs/user/reference/boot_options +
+- Anaconda options: https://anaconda-installer.readthedocs.io/en/latest/boot-options.html +
 - openSUSE Build Service: https://build.opensuse.org

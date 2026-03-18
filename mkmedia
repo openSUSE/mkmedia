@@ -33,6 +33,10 @@
 
     $self->{base} = $t;
 
+    if(-x "/usr/bin/setfacl") {
+      system "/usr/bin/setfacl --remove-all '$t'";
+    }
+
     if(!$save_tmp) {
       my $s_t = $SIG{TERM};
       $SIG{TERM} = sub { File::Temp::cleanup; &$s_t if $s_t };
@@ -191,6 +195,10 @@ sub get_initrd_format;
 sub unpack_orig_initrd;
 sub extract_installkeys;
 sub create_cd_ikr;
+sub append_option;
+sub insert_option;
+sub delete_option;
+sub parse_options;
 sub merge_options;
 sub isolinux_add_option;
 sub grub2_add_option;
@@ -459,6 +467,8 @@ if(defined $opt_tmp_dir) {
   die "$opt_tmp_dir: directory not writable\n" unless -w _ && -W _;
   die "$opt_tmp_dir: directory not executable\n" unless -X _ && -X _;
 }
+
+umask 0022;
 
 $ENV{PATH} = "$LIBEXECDIR/mkmedia:/usr/bin:/bin:/usr/sbin:/sbin";
 
@@ -1459,6 +1469,10 @@ sub analyze_boot
       $boot->{$main_arch}{initrd} = "$z_dir/initrd" if is_file("$z_dir/initrd");
       $boot->{$main_arch}{kernel} = "$z_dir/linux" if is_file("$z_dir/linux");
 
+      for my $p (qw ( cdboot.prm generic.prm genericdvd.prm parmfile parmfile.hmc )) {
+        push @{$boot->{$main_arch}{parmfiles}}, "$z_dir/$p" if is_file("$z_dir/$p");
+      }
+
       $boot->{$main_arch}{parmfile} = $parmfile;
       $boot->{$main_arch}{zipl_map} = $boot->{$main_arch}{kernel};
       $boot->{$main_arch}{zipl_map} =~ s#/[^/]*$#/zipl.map#;
@@ -1472,6 +1486,7 @@ sub analyze_boot
         $boot->{$main_arch}{bl}{ikr}{ins} = "suse.ins" if is_file("suse.ins");
         $boot->{$main_arch}{bl}{ikr}{ins} = "$z_dir/suse.ins" if is_file("$z_dir/suse.ins");
         $boot->{$main_arch}{bl}{ikr}{layout} = read_s390x_ins $boot->{$main_arch}{bl}{ikr}{ins};
+        # used when parsing boot loader config
         $boot->{$main_arch}{bl}{ikr}{config} = $parmfile;
       }
     }
@@ -1611,21 +1626,6 @@ sub build_todo
     if($_ eq 's390x') {
       $opt_no_mbr_code = 1 if !defined $opt_no_mbr_code;
       $opt_zipl = 1 if !defined $opt_zipl;
-      if($opt_boot_options && $boot->{s390x}{parmfile}) {
-        my $f = copy_or_new_file $boot->{s390x}{parmfile};
-        my $boot_opts;
-        if(open my $fd, $f) {
-          local $/;
-          $boot_opts = <$fd>;
-          close $fd;
-        }
-        $boot_opts =~ s/\s*$//;
-        $opt_boot_options = merge_options $boot_opts, $opt_boot_options;
-        if(open my $fd, ">", $f) {
-          print $fd "$opt_boot_options\n";
-          close $fd;
-        }
-      }
       if($opt_zipl) {
         my $zipl_map = $boot->{s390x}{zipl_map};
         my $zipl_map_dirs = $zipl_map;
@@ -2301,7 +2301,7 @@ sub run_isozipl
 
   $opt = " --kernel $kernel --initrd $initrd --map $map";
 
-  my $boot_opts = $opt_boot_options;
+  my $boot_opts = merge_options "", $opt_boot_options;
 
   if($parmfile) {
     $opt .= " --parm $parmfile";
@@ -3539,64 +3539,156 @@ sub create_cd_ikr
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# append_option(option_list, option)
+#
+# Append option to option_list. option_list is modified.
+#
+sub append_option
+{
+  my $opts = $_[0];
+  my $opt = $_[1];
+
+  push @{$opts->{list}}, $opt;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# insert_option(option_list, option)
+#
+# Insert option in option_list. Either replace existing option or append if
+# none existed in option_list. option_list is modified.
+#
+sub insert_option
+{
+  my $opts = $_[0];
+  my $opt = $_[1];
+
+  my $len = @{$opts->{list}};
+
+  for(my $idx = 0; $idx < $len; $idx++) {
+    my $opt_idx = $opts->{list}[$idx];
+    if($opt_idx->{key} eq $opt->{key}) {
+      $opts->{list}[$idx] = $opt;
+      return;
+    }
+  }
+
+  push @{$opts->{list}}, $opt;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# delete_option(option_list, option)
+#
+# Delete option from option_list. option_list is modified.
+#
+sub delete_option
+{
+  my $opts = $_[0];
+  my $opt = $_[1];
+
+  my $len = @{$opts->{list}};
+
+  for(my $idx = 0; $idx < $len; $idx++) {
+    my $opt_idx = $opts->{list}[$idx];
+    if($opt_idx->{key} eq $opt->{key}) {
+      splice @{$opts->{list}}, $idx, 1;
+      $idx--;
+      $len--;
+    }
+  }
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# parse_options(options)
+#
+# Parse option string into individual options and return hash with option data.
+#
+sub parse_options
+{
+  my $opts = $_[0];
+  my $parsed = { list => [], count => {} };
+
+  for my $opt (split " ", $opts) {
+    my $key = $opt;
+    my $value;
+    my $delete;
+    if($opt =~ /(.*?)=(.*)/) {
+      $key = $1;
+      $value = $2;
+    }
+    if($key =~ s/^-//) {
+      $delete = 1;
+    }
+    else {
+      $parsed->{count}{$key}++;
+    }
+    push @{$parsed->{list}}, { key => $key, value => $value, delete => $delete };
+  }
+
+  return $parsed;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # merge_options(options, new_options)
 #
 # Update boot options with new_options and return updated option string.
+#
+# Options prefixed by '-' are removed.
+#
+# If an option key appears more than once it is assumed the option can be
+# used more than once and all options are added.
+#
+# If an option key appears only once de-duplication is done and any existing
+# option with this key is replaced.
+#
+# If this gets too magical, put some option in quotes ("") - in this case
+# the entire new option string is passed on verbatim.
 #
 sub merge_options
 {
   my $opts = $_[0];
   my $new_opts = $_[1];
 
+  $opts =~ s/\s*$//;
+
+  my $p_opts = parse_options $opts;
+  my $p_new_opts = parse_options $new_opts;
+
   # avoid tricky stuff...
   if($opts =~ /"/ || $new_opts =~ /"/) {
-    $opts .= " $new_opts";
+    $opts .= " " if $opts ne "";
+    $opts .= $new_opts;
   }
   else {
-    my @opts;
-    my %new_opts;
-    my @new_opts_order;
-    for my $n (split " ", $new_opts) {
-      if($n =~ /(.*?)=(.*)/) {
-        push @new_opts_order, $1;
-        $new_opts{$1} = $2;
+    for my $opt (@{$p_new_opts->{list}}) {
+      if($opt->{delete}) {
+        delete_option $p_opts, $opt;
+      }
+      # 'initrd' is special: never allow duplication (needed for isolinux config)
+      elsif($p_new_opts->{count}{$opt->{key}} > 1 && $opt->{key} ne 'initrd') {
+        append_option $p_opts, $opt;
       }
       else {
-        push @new_opts_order, $n;
-        $new_opts{$n} = undef;
+        insert_option $p_opts, $opt;
       }
     }
 
-    for my $opt (split " ", $opts) {
-      my $k = $opt;
-      $k =~ s/=.*//;
-      if(exists $new_opts{$k}) {
-        $opt = $k;
-        $opt .= "=$new_opts{$k}" if defined $new_opts{$k};
-        delete $new_opts{$k};
+    my @opt_list;
+    for my $opt (@{$p_opts->{list}}) {
+      if(defined $opt->{value}) {
+        push @opt_list, "$opt->{key}=$opt->{value}"
       }
-      if(exists $new_opts{"-$k"}) {
-        $opt = undef;
-        delete $new_opts{$k};
-      }
-      push @opts, $opt if defined $opt;
-    }
-
-    for my $opt (@new_opts_order) {
-      my $k = $opt;
-      if(exists $new_opts{$opt}) {
-        if($opt !~ /^-/) {
-          $opt .= "=$new_opts{$opt}" if defined $new_opts{$opt};
-          delete $new_opts{$k};
-          push @opts, $opt;
-        }
+      else {
+        push @opt_list, "$opt->{key}"
       }
     }
-
-    $opts = join ' ', @opts;
+    $opts = join ' ', @opt_list;
   }
 
-  print "boot options update:\n  \"$_[0]\"\n+ \"$_[1]\"\n= \"$opts\"\n" if $opt_verbose >= 3;
+  print "boot options update:\n  \"$_[0]\"\n+ \"$_[1]\"\n= \"$opts\"\n" if $opt_verbose >= 2;
 
   return $opts;
 }
@@ -3828,6 +3920,22 @@ sub update_boot_options
       my $m;
       $m = copy_file "$boot->{$b}{bl}{isolinux}{base}/message" if $opt_new_boot_entry;
       isolinux_add_option $n, $opt_boot_options, $m;
+    }
+    if($boot->{$b}{bl}{ikr}) {
+      for my $parmfile (@{$boot->{s390x}{parmfiles}}) {
+        my $f = copy_or_new_file $parmfile;
+        my $boot_opts;
+        if(open my $fd, $f) {
+          local $/;
+          $boot_opts = <$fd>;
+          close $fd;
+        }
+        $boot_opts = merge_options $boot_opts, $opt_boot_options;
+        if(open my $fd, ">", $f) {
+          print $fd "$boot_opts\n";
+          close $fd;
+        }
+      }
     }
     if($boot->{$b}{bl}{grub2}) {
       my $n = copy_file $boot->{$b}{bl}{grub2}{config} || copy_file "$boot->{$b}{bl}{grub2}{base}/grub.cfg";

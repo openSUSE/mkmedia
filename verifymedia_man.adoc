@@ -51,7 +51,9 @@ The result of some tests is ignored by default - making them optional checks:
 
 == Links
 
-- more documentation: `/usr/share/doc/packages/mksusecd` +
-- get latest version: https://github.com/openSUSE/mksusecd?tab=readme-ov-file#downloads +
-- mksusecd web site: https://github.com/openSUSE/mksusecd +
+- extensive usage summary: https://www.suse.com/c/make-your-own-suse-dvd-tooling-for-suse-and-multi-linux-installation-live-media +
+- the same, locally: file:///usr/share/doc/packages/mksusecd/suse_blog.html +
+- more documentation: file:///usr/share/doc/packages/mksusecd +
+- get latest version: https://github.com/openSUSE/mkmedia?tab=readme-ov-file#downloads +
+- mkmedia web site: https://github.com/openSUSE/mkmedia +
 - openSUSE Build Service: https://build.opensuse.org
