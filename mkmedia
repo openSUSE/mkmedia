@@ -333,6 +333,7 @@ my $opt_luks;
 my $opt_initrd_options = [];
 my $opt_tmp_dir;
 my $opt_dry_run;
+my $opt_dud_dist;
 
 Getopt::Long::Configure("gnu_compat");
 
@@ -384,6 +385,7 @@ GetOptions(
   'no-mbr-chs'       => \$opt_no_mbr_chs,
   'initrd=s'         => \@opt_initrds,
   'apply-dud=s'      => \@opt_duds,
+  'dud-dist=s'       => \$opt_dud_dist,
   'instsys|live-root=s' => \@opt_instsys,
   'rescue=s'         => \@opt_rescue,
   'rebuild-initrd'   => sub { $opt_rebuild_initrd = 2 },
@@ -481,7 +483,7 @@ if($>) {
   }
   if($opt_rebuild_initrd == 3) {
     # for live-root changes and full initrd rebuilds
-    die "mkmedia must be run with root permissions to appy driver updates.\n"
+    die "mkmedia must be run with root permissions to apply driver updates.\n"
   }
 }
 
@@ -1036,6 +1038,7 @@ Initrd/instsys update related options:
       --rescue DIR|RPM            Add content of DIR or RPM to rescue system (can be repeated).
       --instsys-size SIZE_SPEC    Resize Live root file system.
       --live-root-size SIZE_SPEC  Alias for --instsys-size.
+      --dud-dist DIST             Apply DUDs intended for DIST (see man page for details).
       --no-docs                   Don't include package doc files (default).
       --keep-docs                 Include package doc files.
 
@@ -7520,6 +7523,7 @@ sub apply_duds_1
   die "initrd unpacking failed\n" if !$orig_initrd;
 
   my $linuxrc_config = read_config "$orig_initrd/linuxrc.config";
+  my $os_release = read_config "$orig_initrd/etc/os-release";
 
   my $dud;
 
@@ -7543,6 +7547,18 @@ sub apply_duds_1
     $dud->{installer} = 'yast';
     $dud->{dir} = $linuxrc_config->{updatedir};
     ($dud->{arch} = $1, $dud->{dist} = $2) if $dud->{dir} =~ m#/([^/-]+)-([^/-]+)$#;
+  }
+  elsif($os_release->{id} && $os_release->{version_id}) {
+    $dud->{dist} = $os_release->{id} . $os_release->{version_id};
+    $dud->{dist} = "tw" if $os_release->{id} eq "opensuse-tumbleweed";
+    $dud->{dir} = "/linux/suse/$dud->{arch}-$dud->{dist}";
+  }
+
+  if($opt_dud_dist) {
+    $dud->{dist} = $opt_dud_dist;
+    # avoid accidents...
+    $dud->{dist} =~ tr/\/\$\{\}\[\]\t //d;
+    $dud->{dir} = "/linux/suse/$dud->{arch}-$dud->{dist}";
   }
 
   print "going to apply driver updates in $dud->{dir}\n" if $opt_verbose >= 1;
@@ -7581,6 +7597,11 @@ sub apply_duds_1
     push @sources, $new_source;
     update_filelist [ $new_source ];
     unpack_orig_initrd;
+  }
+
+  if($dud->{count} == 0) {
+    print "warning: no driver updates found in $dud->{dir}\n";
+    print "(Try --dud-dist option to apply this DUD anyway.)\n";
   }
 
   return $dud;
@@ -7636,8 +7657,12 @@ sub apply_single_dud
 
   $dud->{name} = $dud->{config}{updatename};
   $dud->{id} = $dud->{config}{updateid};
+  $dud->{product} = $dud->{config}{updateproduct};
 
-  print "applying driver update\n  - id: $dud->{id}\n  - name: $dud->{name}\n" if !$iso_only;
+  if(!$iso_only) {
+    print "applying driver update\n  - id: $dud->{id}\n  - name: $dud->{name}\n";
+    print "  - product: $dud->{product}\n" if $dud->{product};
+  }
 
   my $log;
   my $log_id = $dud->{id};

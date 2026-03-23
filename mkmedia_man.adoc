@@ -176,6 +176,13 @@ If _SIZE_SPEC_ starts with a '+' or '-', the size is increased or decreased, res
 *--live-root-size*=_SIZE_SPEC_::
 Aias for *--instsys-size*.
 
+*--dud-dist*=_DIST_::
+Apply DUDs intended for _DIST_.
+Usually *--apply-dud* applies only DUDs that match the product of the installation medium. If you want to
+apply a DUD even if the product does not match, set _DIST_ to the dist tag used in the DUD. Examples
+are 'leap16.1' (Leap 16.1), 'tw' (Tumbleweed), 'sles16.1' (SLES 16.1).
+The option value is actually a shell glob - so, to catch all, you can set _DIST_ to '*'.
+
 *--no-docs*::
 Don't include package documentation files (default).
 
