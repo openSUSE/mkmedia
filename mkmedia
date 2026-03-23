@@ -481,7 +481,7 @@ if($>) {
   }
   if($opt_rebuild_initrd == 3) {
     # for live-root changes and full initrd rebuilds
-    die "mkmedia must be run with root permissions to appy driver updates.\n"
+    die "mkmedia must be run with root permissions to apply driver updates.\n"
   }
 }
 
@@ -7636,8 +7636,12 @@ sub apply_single_dud
 
   $dud->{name} = $dud->{config}{updatename};
   $dud->{id} = $dud->{config}{updateid};
+  $dud->{product} = $dud->{config}{updateproduct};
 
-  print "applying driver update\n  - id: $dud->{id}\n  - name: $dud->{name}\n" if !$iso_only;
+  if(!$iso_only) {
+    print "applying driver update\n  - id: $dud->{id}\n  - name: $dud->{name}\n";
+    print "  - product: $dud->{product}\n" if $dud->{product};
+  }
 
   my $log;
   my $log_id = $dud->{id};
