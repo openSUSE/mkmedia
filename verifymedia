@@ -172,7 +172,11 @@ sub chk_eltorito;
 
 sub susystem;
 sub get_iso9660_info;
+sub get_iso9660_info_mkisofs;
+sub get_iso9660_info_xorriso;
 sub iso_ls;
+sub iso_ls_mkisofs;
+sub iso_ls_xorriso;
 sub read_ini;
 sub get_media_style;
 sub get_media_variant;
@@ -226,11 +230,15 @@ my $iso_ls_rockridge;
 my $iso_ls_plain;
 my $iso_dir;
 my $initrd_dir;
+my $iso_backend;
+my $parti_opts;
 
 Getopt::Long::Configure("gnu_compat");
 
 GetOptions(
   'ignore=s'         => \@$opt_ignore_list,
+  'mkisofs'          => sub { $iso_backend = "mkisofs" },
+  'xorriso'          => sub { $iso_backend = "xorriso" },
   'save-temp'        => \$opt_save_temp,
   'verbose|v'        => sub { $opt_verbose++ },
   'version'          => sub { print "$VERSION\n"; exit 0 },
@@ -238,6 +246,21 @@ GetOptions(
 ) || usage 1;
 
 $ENV{PATH} = "$LIBEXECDIR/mkmedia:/usr/bin:/bin:/usr/sbin:/sbin";
+
+if(!$iso_backend) {
+  $iso_backend = "xorriso" if -x("/usr/bin/xorriso");
+  $iso_backend = "mkisofs" if -x("/usr/bin/isoinfo") && -x("/usr/bin/mkisofs");
+}
+
+if($iso_backend eq "xorriso" && ! -x("/usr/bin/xorriso")) {
+  die "xorriso missing - install xorriso package\n"
+}
+
+if($iso_backend eq "mkisofs" && ! (-x("/usr/bin/isoinfo") && -x("/usr/bin/mkisofs"))) {
+  die "mkisofs missing - install mkisofs package\n"
+}
+
+$parti_opts = $iso_backend eq "xorriso" ? "--xorriso" : "--mkisofs";
 
 $tmp = Tmp::new($opt_save_temp);
 
@@ -480,7 +503,7 @@ show
   "no garbage files",
   "These files are not needed and should be removed.";
 
-my $parti = `parti --json $src`;
+my $parti = `parti $parti_opts --json $src`;
 $media->{parti} = decode_json($parti) if $parti;
 
 print "- partition data:\n", Dumper($media->{parti}) if $media->{parti} && $opt_verbose >= 2;
@@ -1044,8 +1067,44 @@ sub chk_eltorito
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub get_iso9660_info
 {
+  my $data = {};
+
+  if($iso_backend eq 'xorriso') {
+    $data = get_iso9660_info_xorriso @_;
+  }
+  elsif($iso_backend eq 'mkisofs') {
+    $data = get_iso9660_info_mkisofs @_;
+  }
+
+  return $data;
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub get_iso9660_info_xorriso
+{
   my $iso = $_[0];
-  my $info = `isoinfo -d -i $iso 2>/dev/null`;
+  my $info = `xorriso -indev '$iso' -pvd_info -- -report_el_torito plain -- -assess_indev_features plain 2>/dev/null`;
+  my $data = {};
+
+  $data->{system_id} = $1 if $info =~ /^System Id\s*: (.*)/m;
+  $data->{volume_id} = $1 if $info =~ /^Volume Id\s*: (.*)/m;
+  $data->{publisher_id} = $1 if $info =~ /^Publisher Id\s*: (.*)/m;
+  $data->{application_id} = $1 if $info =~ /^App Id\s*: (.*)/m;
+  $data->{preparer_id} = $1 if $info =~ /^Preparer Id\s*: (.*)/m;
+
+  $data->{eltorito} = $1 if $info =~ /^El Torito catalog\s*: (\d+)/m;
+
+  $data->{joliet} = 1 if $info =~ /^Indev feature: joliet=1/m;
+  $data->{rockridge} = 1 if $info =~ /^Indev feature: eltorito=1/m;
+
+  return $data;
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub get_iso9660_info_mkisofs
+{
+  my $iso = $_[0];
+  my $info = `isoinfo -d -i '$iso' 2>/dev/null`;
   my $data = {};
 
   return unless $info =~ /CD-ROM is in ISO 9660 format/;
@@ -1059,8 +1118,6 @@ sub get_iso9660_info
   $data->{rockridge} = 1 if $info =~ /^Rock Ridge .* found/m;
   $data->{eltorito} = $1 if $info =~ /^El Torito .* found, boot catalog is in sector (\d+)/m;
 
-  print "- iso header info:\n", Dumper($iso9660) if $opt_verbose >= 2;
-
   return $data;
 }
 
@@ -1071,6 +1128,75 @@ sub get_iso9660_info
 # Return ref to hash with files.
 #
 sub iso_ls
+{
+  if($iso_backend eq 'xorriso') {
+    return iso_ls_xorriso @_;
+  }
+  elsif($iso_backend eq 'mkisofs') {
+    return iso_ls_mkisofs @_;
+  }
+
+  return {};
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ISO file list sorted by start address.
+#
+# Return ref to hash with files.
+#
+sub iso_ls_xorriso
+{
+  my $iso = $_[0];
+  my $extension = $_[1];
+  my $files;
+
+  if($extension eq "joliet" || $extension eq "rockridge") {
+    $extension = "any";
+  }
+  else {
+    $extension = "ecma119";
+  }
+
+  my $lba = {};
+
+  open my $fd, "xorriso -read_fs $extension -indev '$iso' -find / -exec report_lba -- -find / -exec lsdl 2>/dev/null |";
+
+  while(<$fd>) {
+    if(/^File data lba:[^,]+,\s*(\d+).*?'(.*)'$/) {
+      $lba->{$2} = $1;
+      next;
+    }
+
+    if(/^(\S)(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+).*? '(.*)'$/) {
+      my $type = ' ';
+      $type = 'd' if $1 eq 'd';
+      next if $7 eq '/';
+      push @$files, { name => $7, type => $type, start => ($lba->{$7} ? $lba->{$7} : 0), perm => $2, uid => $4, gid => $5, size => $6 };
+      $files->[-1]{name} =~ s#^/##;
+    }
+  }
+
+  close $fd;
+
+  my $by_name;
+
+  if($files) {
+    $files = [ sort { $a->{start} <=> $b->{start} } @$files ];
+
+    for my $n (@$files) {
+      $by_name->{$n->{name}} = $n;
+    }
+  }
+
+  return { list => $files, by_name => $by_name };
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ISO file list sorted by start address.
+#
+# Return ref to hash with files.
+#
+sub iso_ls_mkisofs
 {
   my $iso = $_[0];
   my $extension = $_[1];
@@ -1086,7 +1212,7 @@ sub iso_ls
     $extension = "";
   }
 
-  open my $fd, "isoinfo $extension -l -i $iso 2>/dev/null |";
+  open my $fd, "isoinfo $extension -l -i '$iso' 2>/dev/null |";
 
   my $dir = "/";
 
@@ -1828,7 +1954,7 @@ sub fs_type
       $type->{crypto} = $1;
     }
 
-    my $parti = `parti --json $file 2>/dev/null`;
+    my $parti = `parti $parti_opts --json $file 2>/dev/null`;
     $parti = decode_json($parti) if $parti;
 
     if($parti->{gpt_primary}) {
