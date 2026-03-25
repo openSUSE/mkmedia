@@ -68,5 +68,5 @@ doc: mkmedia.1 mksusecd.1 verifymedia.1
 clean:
 	@make -C tools/isohybrid clean
 	@make -C tools/parti clean
-	@rm -f *.o *~ *.tmp */*~ mkmedia{.1,_man.xml,_man.pdf} verifymedia{.1,_man.xml,_man.pdf} suse_blog.html mksusecd.1
+	@rm -f *.o *~ *.tmp */*~ mkmedia{.1,_man.xml,_man.pdf} verifymedia{.1,_man.xml,_man.pdf} mksusecd.1
 	@rm -rf package
