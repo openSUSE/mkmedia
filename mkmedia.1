@@ -1,0 +1,1792 @@
+'\" t
+.\"     Title: mkmedia
+.\"    Author: [see the "AUTHOR(S)" section]
+.\" Generator: Asciidoctor 2.0.23
+.\"      Date: 2026-03-23
+.\"    Manual: User Commands
+.\"    Source: mkmedia 5.3
+.\"  Language: English
+.\"
+.TH "MKMEDIA" "1" "2026-03-23" "mkmedia 5.3" "User Commands"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+mkmedia, mksusecd \- create and modify bootable media.
+.SH "SYNOPSIS"
+.sp
+\fBmkmedia\fP [\fIOPTIONS\fP]... \fISOURCES\fP...
+.br
+.SH "DESCRIPTION"
+.sp
+mkmedia (formerly named mksusecd) can modify or create bootable installation or Live media. They can be
+either ISO images or disk images (to be used on USB sticks, for example).
+.sp
+mkmedia supports media in both openSUSE/SLES and Fedora/RHEL layout.
+See Fedora/RHEL notes for details.
+.sp
+The main purpose is to adjust existing media. For example
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+change boot options
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+add boot menu entries
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+update the installer
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+update software used by the installer (including kernel and modules)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+integrate driver updates
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+integrate add\-on repositories
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+create small network / online boot media
+.RE
+.sp
+\fISOURCES\fP can be directories, existing ISO image files, or RPMs. They are all combined to produce a single ISO.
+.br
+See \fBSources\fP below for more details.
+.SS "General Options"
+.sp
+\fB\-\-verbose\fP
+.RS 4
+Show more detailed messages. Can be repeated to log even more.
+.RE
+.sp
+\fB\-\-version\fP
+.RS 4
+Show mkmedia version.
+.RE
+.sp
+\fB\-\-dry\-run\fP
+.RS 4
+Do everything except writing the final image.
+.RE
+.sp
+\fB\-\-tmp\-dir\fP=\fITMPDIR\fP
+.RS 4
+Use TMPDIR as temporary directory (default: /tmp).
+.br
+Some operations can require a substantial amount of temporary disk space. For example, modifying
+the installation system involves unpacking the Live root file system of the installer \- which is typically around 6GB.
+.br
+Use this option if you would otherwise run out of disk space.
+.RE
+.sp
+\fB\-\-save\-tmp\fP
+.RS 4
+Keep temporary files.
+.RE
+.sp
+\fB\-\-help\fP
+.RS 4
+Show this help text.
+.RE
+.SS "Show available repositories"
+.sp
+\fB\-\-list\-repos\fP
+.RS 4
+List all available repositories in \fISOURCES\fP.
+.RE
+.SS "Create new image"
+.sp
+\fB\-c, \-\-create\fP=\fIFILE\fP
+.RS 4
+Create ISO or disk image \fIFILE\fP from \fISOURCES\fP.
+.br
+.RE
+.SS "Media type related options"
+.sp
+\fB\-\-micro\fP
+.RS 4
+Create image with just enough files to run the installer.
+.br
+\fBNote\fP: this gives a network installation image which uses the installer from the medium (the typical online media).
+For this to work, either the installation is registration\-based or the location of the installation repository must be explicitly set
+using the \fB\-\-defaultrepo\fP option.
+.RE
+.sp
+\fB\-\-nano\fP
+.RS 4
+Create image with just enough files for a network based installation.
+.br
+\fBNote\fP: this gives a small network installation image which has to load even the installer via network.
+For this to work, the location of the installation repository must be explicitly set
+using the \fB\-\-defaultrepo\fP option..
+.RE
+.sp
+\fB\-\-pico\fP
+.RS 4
+Even less than \-\-nano, keep just the boot loader (for testing).
+.RE
+.SS "Media integrity related options"
+.sp
+\fB\-\-check\fP
+.RS 4
+Tag ISO to be verified before starting the installation.
+.RE
+.sp
+\fB\-\-no\-check\fP
+.RS 4
+Don\(cqt tag ISO (default).
+.RE
+.sp
+\fB\-\-digest\fP=\fIDIGEST\fP
+.RS 4
+Embed \fIDIGEST\fP to verify ISO integrity, available digests: md5, sha1, sha224, sha256, sha384, sha512 (default: sha256).
+.RE
+.sp
+\fB\-\-no\-digest\fP
+.RS 4
+Don\(cqt embed any digest to verify ISO integrity.
+.RE
+.sp
+\fB\-\-sign\-image\fP
+.RS 4
+Embed signature for entire image.
+.br
+See \fBImage signing notes\fP below.
+.RE
+.sp
+\fB\-\-no\-sign\-image\fP
+.RS 4
+Don\(cqt embed signature for entire image. (default)
+.br
+See \fBImage signing notes\fP below.
+.RE
+.sp
+\fB\-\-signature\-file\fP=FILE
+.RS 4
+Store embedded signature in FILE (default: /.signature for SUSE\-style media, no signature file for RH\-style media).
+.br
+See \fBImage signing notes\fP below.
+.RE
+.sp
+\fB\-\-sign\fP
+.RS 4
+Re\-sign \*(Aq/CHECKSUMS\*(Aq if it has changed.
+The public part of the sign key is added to the initrd. (default)
+.br
+See \fBSigning notes\fP below.
+.RE
+.sp
+\fB\-\-no\-sign\fP
+.RS 4
+Don\(cqt re\-sign \*(Aq/CHECKSUMS\*(Aq.
+.RE
+.sp
+\fB\-\-sign\-key\fP=\fIKEY_FILE\fP
+.RS 4
+Use this key file instead of generating a transient key.
+.br
+See \fBSigning notes\fP below.
+.RE
+.sp
+\fB\-\-sign\-key\-id\fP=\fIKEY_ID\fP
+.RS 4
+Use this key id instead of generating a transient key.
+.br
+\fBNote\fP: gpg might show an interactive dialog asking for a password to unlock
+the key unless you use the \fB\-\-sign\-pass\-file\fP option.
+.br
+See \fBSigning notes\fP below.
+.RE
+.sp
+\fB\-\-sign\-pass\-file\fP
+.RS 4
+Use the password stored in this file to open the key.
+.br
+See \fBSigning notes\fP below.
+.RE
+.SS "Initrd/instsys update related options"
+.sp
+\fB\-\-apply\-dud\fP=\fIDUD\fP
+.RS 4
+Apply driver update DUD (can be repeated).
+.br
+See \fBDriver update notes\fP below.
+.RE
+.sp
+\fB\-\-initrd\fP=\fIDIR\fP|\fIRPM\fP|\fIDUD\fP
+.RS 4
+Add content of \fIDIR\fP, \fIRPM\fP, or \fIDUD\fP to initrd (can be repeated).
+.br
+See \fBDriver update notes\fP below.
+.RE
+.sp
+\fB\-\-rebuild\-initrd\fP
+.RS 4
+Rebuild the entire initrd instead of appending changes.
+.br
+This makes the initrd smaller but requires to run mkmedia with root permissions.
+.br
+See \fBKernel update notes\fP below.
+.RE
+.sp
+\fB\-\-no\-rebuild\-initrd\fP
+.RS 4
+Append changes to the initrd instead of rebuilding.
+.br
+This makes the initrd larger but does not require to run mkmedia with root permissions.
+.br
+See \fBKernel update notes\fP below.
+.RE
+.sp
+\fB\-\-initrd\-config\fP=\fIKEY\fP=\fIVALUE\fP
+.RS 4
+Add config option to initrd intended for linuxrc, YaST, dracut, Agama, or Anaconda (option can be repeated).
+.br
+The config option is stored in \*(Aq/etc/linuxrc.d/61_mkmedia\*(Aq (for linuxrc\-based media) or
+\*(Aq/etc/cmdline.d/61\-mkmedia.conf\*(Aq (dracut\-based media).
+.br
+See \fBBoot option and initrd config option notes\fP below.
+.RE
+.sp
+\fB\-\-instsys\fP=\fIDIR\fP|\fIRPM\fP
+.RS 4
+Add content of \fIDIR\fP or \fIRPM\fP to installation system or root file system for Live media (can be repeated).
+.RE
+.sp
+\fB\-\-live\-root\fP=\fIDIR\fP|\fIRPM\fP
+.RS 4
+Alias for \fB\-\-instsys\fP.
+.RE
+.sp
+\fB\-\-rescue\fP=\fIDIR\fP|\fIRPM\fP
+.RS 4
+Add content of \fIDIR\fP or \fIRPM\fP to rescue system (can be repeated).
+.RE
+.sp
+\fB\-\-instsys\-size\fP=\fISIZE_SPEC\fP
+.RS 4
+Resize Live root file system.
+\fISIZE_SPEC\fP can be a number, optionally followed by a unit (\*(Aqk\*(Aq,
+\*(Aqm\*(Aq, \*(Aqg\*(Aq, \*(Aqt\*(Aq) indicating kiB, MiB, GiB, or TiB, respectively.
+If \fISIZE_SPEC\fP starts with a \*(Aq+\*(Aq or \*(Aq\-\*(Aq, the size is increased or decreased, respectively.
+.RE
+.sp
+\fB\-\-live\-root\-size\fP=\fISIZE_SPEC\fP
+.RS 4
+Aias for \fB\-\-instsys\-size\fP.
+.RE
+.sp
+\fB\-\-dud\-dist\fP=\fIDIST\fP
+.RS 4
+Apply DUDs intended for \fIDIST\fP.
+Usually \fB\-\-apply\-dud\fP applies only DUDs that match the product of the installation medium. If you want to
+apply a DUD even if the product does not match, set \fIDIST\fP to the dist tag used in the DUD. Examples
+are \*(Aqleap16.1\*(Aq (Leap 16.1), \*(Aqtw\*(Aq (Tumbleweed), \*(Aqsles16.1\*(Aq (SLES 16.1).
+The option value is actually a shell glob \- so, to catch all, you can set \fIDIST\fP to \*(Aq*\*(Aq.
+.RE
+.sp
+\fB\-\-no\-docs\fP
+.RS 4
+Don\(cqt include package documentation files (default).
+.RE
+.sp
+\fB\-\-keep\-docs\fP
+.RS 4
+Include package documentation files.
+.RE
+.SS "Kernel/module update related options"
+.sp
+\fB\-\-kernel\fP=\fIRPM_LIST\fP
+.RS 4
+Replace kernel, kernel modules, and kernel firmware used for booting. \fIRPM_LIST\fP is
+a list of kernel or firmware packages.
+.br
+\fBNote\fP: this option takes a variable number of arguments. So
+it may be necessary to terminate the arg list with an explicit \*(Aq\-\-\*(Aq.
+.br
+\fBNote also\fP: since mkmedia 3.0 this option automatically implies \fB\-\-rebuild\-initrd\fP. Use \fB\-\-no\-rebuild\-inintrd\fP to revert this.
+.br
+See \fBKernel update notes\fP below.
+.RE
+.sp
+\fB\-\-modules\fP=\fIMODULE_LIST\fP
+.RS 4
+A list of modules to be added to the initrd.
+Use this in combination with \fB\-\-kernel\fP.
+You can prefix module names with \*(Aq\-\*(Aq to have them removed instead.
+.br
+\fIMODULE_LIST\fP may be space or comma separated.
+.br
+\fBNote\fP: this option takes a variable number of arguments. So
+it may be necessary to terminate the arg list with an explicit \*(Aq\-\-\*(Aq.
+.RE
+.sp
+\fB\-\-no\-compression\fP=\fILIST\fP
+.RS 4
+A comma\-separated list of: firmware, modules, squashfs.
+.br
+See \fBKernel compression notes\fP below.
+.RE
+.SS "Add\-on related options"
+.sp
+\fB\-\-addon\fP=\fIRPM_LIST\fP
+.RS 4
+A list of RPMs that should be made available as an add\-on to the main product.
+.br
+\fBNote\fP: this option takes a variable number of arguments. So
+it may be necessary to terminate the arg list with an explicit \*(Aq\-\-\*(Aq.
+.br
+See \fBAdd\-on notes\fP below.
+.RE
+.sp
+\fB\-\-addon\-name\fP=\fINAME\fP
+.RS 4
+Use \fINAME\fP as the add\-on name.
+.br
+If unset, the auto\-generated name \*(AqAdd\-On NUM\*(Aq is used, with NUM
+set to the smallest number that avoids name conflicts.
+.RE
+.sp
+\fB\-\-addon\-alias\fP=\fIALIAS\fP
+.RS 4
+Set repo alias to \fIALIAS\fP.
+.br
+If unset, an alias based on the repo name is generated.
+.RE
+.sp
+\fB\-\-addon\-prio\fP=\fINUM\fP
+.RS 4
+Set add\-on repository priority to \fINUM\fP (default: 60).
+.br
+Lower \fINUM\fP means higher priority.
+.RE
+.SS "ISO file system related options"
+.sp
+\fB\-\-joliet\fP
+.RS 4
+Use Joliet extensions (default).
+.RE
+.sp
+\fB\-\-no\-joliet\fP
+.RS 4
+Don\(cqt use Joliet extensions. This is useful when there are file names longer
+than 103 chars \- which Joliet does not support.
+.RE
+.sp
+\fB\-\-volume\fP=\fIVOLUME_ID\fP
+.RS 4
+Set ISO volume id to \fIVOLUME_ID\fP.
+.RE
+.sp
+\fB\-\-vendor\fP=\fIVENDOR_ID\fP
+.RS 4
+Set ISO publisher id to \fIVENDOR_ID\fP.
+.RE
+.sp
+\fB\-\-preparer\fP=\fIPREPARER_ID\fP
+.RS 4
+Set ISO data preparer id to \fIPREPARER_ID\fP.
+.RE
+.sp
+\fB\-\-application\fP=\fIAPPLICATION_ID\fP
+.RS 4
+Set ISO application id to \fIAPPLICAION_ID\fP.
+.RE
+.sp
+\fB\-\-volume1\fP=\fIVOLUME_ID\fP
+.RS 4
+Specify ISO volume id of the entire image \- in case it should differ
+from the ISO volume id used for the partition.
+.br
+See \fBHybrid mode notes\fP below.
+.RE
+.SS "General image layout related options"
+.sp
+\fB\-\-uefi\fP
+.RS 4
+Make ISO UEFI bootable (default).
+.br
+See \fBUEFI boot notes\fP below.
+.RE
+.sp
+\fB\-\-no\-uefi\fP
+.RS 4
+Don\(cqt make ISO UEFI bootable.
+.br
+See \fBUEFI boot notes\fP below.
+.RE
+.sp
+\fB\-\-uefi\-image\fP
+.RS 4
+Make UEFI boot image visible in ISO9660 file system (default if it exists).
+.br
+See \fBUEFI boot notes\fP below.
+.RE
+.sp
+\fB\-\-no\-uefi\-image\fP
+.RS 4
+Hide UEFI boot image in ISO9660 file system (default if it does not exist).
+.br
+See \fBUEFI boot notes\fP below.
+.RE
+.sp
+\fB\-\-zipl\fP
+.RS 4
+Make image zIPL bootable (default on s390x).
+.RE
+.sp
+\fB\-\-no\-zipl\fP
+.RS 4
+Don\(cqt make image zIPL bootable (default if not on s390x).
+.RE
+.sp
+\fB\-\-gpt\fP
+.RS 4
+Add GPT when in isohybrid mode.
+.RE
+.sp
+\fB\-\-mbr\fP
+.RS 4
+Add MBR when in isohybrid mode (default).
+.br
+\fBNote\fP: when both \fB\-\-mbr\fP and \fB\-\-gpt\fP are specified both MBR and GPT are
+written \- which looks nice but is against the UEFI spec.
+.RE
+.sp
+\fB\-\-prot\-mbr\fP
+.RS 4
+When writing a GPT, write a protective MBR (default).
+.RE
+.sp
+\fB\-\-no\-prot\-mbr\fP
+.RS 4
+When writing a GPT, don\(cqt write a protective MBR.
+.RE
+.sp
+\fB\-\-mbr\-code\fP
+.RS 4
+Include x86 MBR boot code (default).
+.RE
+.sp
+\fB\-\-no\-mbr\-code\fP
+.RS 4
+Don\(cqt include x86 MBR boot code.
+.RE
+.sp
+\fB\-\-mbr\-chs\fP
+.RS 4
+Fill in sensible CHS values in MBR partition table (default).
+.RE
+.sp
+\fB\-\-no\-mbr\-chs\fP
+.RS 4
+Use 0xffffff instead of CHS values in MBR partition table.
+.RE
+.sp
+\fB\-\-no\-iso\fP
+.RS 4
+Don\(cqt make image accessible as ISO9660 file system.
+.RE
+.sp
+\fB\-\-hybrid\fP
+.RS 4
+Create an image which is both an ISO and a disk (default).
+.RE
+.sp
+\fB\-\-no\-hybrid\fP
+.RS 4
+Create a regular ISO image without extra gimmicks.
+.RE
+.sp
+\fB\-\-hybrid\-fs\fP=\fIFS\fP
+.RS 4
+Use file system \fIFS\fP for the disk partition created in hybrid mode.
+.br
+\fIFS\fP can be either "" (empty string) producing a partition
+starting at offset 0 and extending across the entire ISO
+image (partitioning tools don\(cqt really like this) or
+\*(Aqiso\*(Aq or \*(Aqfat\*(Aq in which case you get a regular partition
+with an ISO960 or FAT file system (default: \*(Aqiso\*(Aq).
+.RE
+.sp
+\fB\-\-fat\fP
+.RS 4
+Create an image that\(cqs suitable to be put on a USB disk.
+.br
+The image holds a single FAT32 partition and it can NOT be
+used to write a DVD. You can adjust the file system size
+with the \fB\-\-size\fP option.
+.br
+Technically an alias for \fB\-\-hybrid\-fs=fat \-\-no\-efi \-\-no\-iso\fP.
+.RE
+.sp
+\fB\-\-size\fP=\fISIZE_SPEC\fP
+.RS 4
+When using a FAT file system or the \fB\-\-crypto\fP option you can
+set the intended size of the disk image.
+.br
+\fISIZE_SPEC\fP can be a number, optionally followed by a unit (\*(Aqb\*(Aq,
+\*(Aqk\*(Aq, \*(Aqm\*(Aq, \*(Aqg\*(Aq, \*(Aqt\*(Aq) indicating blocks, kiB, MiB, GiB, or TiB, respectively.
+.br
+\fISIZE_SPEC\fP can also be a device name like \*(Aq/dev/sda\*(Aq, in
+which casee the size of the device is used.
+.RE
+.SS "Media repository related options"
+.sp
+\fB\-\-merge\-repos\fP
+.RS 4
+When mkmedia detects repositories in \fISOURCES\fP it will try to make
+them all available and create a common media.1/products file (default).
+.br
+See \fBProduct module notes\fP below.
+.RE
+.sp
+\fB\-\-no\-merge\-repos\fP
+.RS 4
+Skip the special treatment of repositories and just merge all SOURCES.
+.RE
+.sp
+\fB\-\-include\-repos\fP=\fILIST\fP
+.RS 4
+Comma\-separated list of repository names to include in the final image.
+.RE
+.sp
+\fB\-\-enable\-repos\fP=\fIWHEN\fP
+.RS 4
+If \fIWHEN\fP is set to \*(Aqauto\*(Aq or \*(Aqyes\*(Aq the included repositories are
+automatically added. If set to \*(Aqask\*(Aq the user may interactively deselect
+repositories. The default is not to add any repository. Instead, the user
+is expected to add the medium as \*(Aqadd\-on\*(Aq during the installation.
+.RE
+.sp
+\fB\-\-create\-repo\fP
+.RS 4
+Re\-create and sign the repository (default: don\(cqt).
+.RE
+.SS "Repository location related options"
+.sp
+\fB\-\-net\fP=\fIURL\fP
+.RS 4
+Use \fIURL\fP as default network repository.
+.br
+See \fBRepository notes\fP below.
+.RE
+.sp
+\fB\-\-instsys\-url\fP=\fIURL\fP
+.RS 4
+Load the installation system from the specified \fIURL\fP.
+.br
+See \fBRepository notes\fP below.
+.RE
+.sp
+\fB\-\-instsys\-in\-repo\fP
+.RS 4
+Load installation system from repository (default).
+.br
+The option \fB\-\-instsys\-url\fP overrides this setting.
+.br
+See \fBRepository notes\fP below.
+.RE
+.sp
+\fB\-\-no\-instsys\-in\-repo\fP
+.RS 4
+Do not load installation system from repository but search for it on local disks.
+.br
+The option \fB\-\-instsys\-url\fP overrides this setting.
+.br
+See \fBRepository notes\fP below.
+.RE
+.sp
+\fB\-\-defaultrepo\fP=\fIURL_LIST\fP
+.RS 4
+List of comma (\*(Aq,\*(Aq) separated URLs. The installer will try each URL
+in turn to check for an installation repository.
+See \fBRepository notes\fP below.
+.RE
+.SS "Boot menu related options"
+.sp
+\fB\-\-boot\fP=\fIOPTIONS\fP
+.RS 4
+Add \fIOPTIONS\fP to default boot options.
+.br
+See \fBBoot option and initrd config option notes\fP below.
+.RE
+.sp
+\fB\-\-add\-entry\fP=\fIBOOT_ENTRY\fP
+.RS 4
+Instead of modifying the default boot files, create a new
+boot entry. This also means that in case initrd or kernel
+have to be changed, the originals are not overwritten but
+new files added.
+.br
+\fIBOOT_ENTRY\fP is the name used for this new entry.
+.RE
+.SS "Image encryption related options"
+.sp
+\fB\-\-crypto\fP
+.RS 4
+If set, an encrypted disk image is created.
+.br
+See \fBCrypto notes\fP below.
+.RE
+.sp
+\fB\-\-password\fP=\fIPASSWORD\fP
+.RS 4
+Use \fIPASSWORD\fP for encrypting the disk image.
+.RE
+.sp
+\fB\-\-luks\fP=\fIOPTIONS\fP
+.RS 4
+Pass \fIOPTIONS\fP to the \fBcryptsetup luksFormat\fP command when creating the encrypted volume.
+For example, \fB\-\-luks="\-\-iter\-time 1000"\fP.
+.RE
+.sp
+\fB\-\-title\fP=\fITITLE\fP
+.RS 4
+The password query screen uses \fITITLE\fP as title (default: openSUSE).
+.RE
+.sp
+\fB\-\-top\-dir\fP=\fIDIR\fP
+.RS 4
+The installation files are placed into subdir \fIDIR\fP.
+.br
+This helps keeping the directory structure nice and clean
+in case you are using the image also for other things. The boot
+config is adjusted accordingly.
+.RE
+.sp
+\fB\-\-filesystem\fP=\fIFS\fP
+.RS 4
+Use file system \fIFS\fP for the encrypted image (default: ext4).
+.br
+Don\(cqt be too creative here \- the file system must be supported by grub2.
+.RE
+.SS "Debug options"
+.sp
+\fB\-\-mount\-iso\fP
+.RS 4
+Mount ISO images to access them (default if run as root).
+.RE
+.sp
+\fB\-\-no\-mount\-iso\fP
+.RS 4
+Unpack ISO images to access them (default if run as normal user).
+.br
+Note: the ISO image is unpacked into a temporary directory below \*(Aq/tmp\*(Aq.
+Make sure that your file system has enough free space.
+.RE
+.SS "Sources"
+.sp
+Sources can be
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+existing installation media
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+skelcd\-installer\-<PRODUCT> packages
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+tftpboot\-installation\-<PRODUCT> packages
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+directories with additional or modified files that should be added/merged into the image
+.RE
+.sp
+Sources can be used either as ISO image or RPM file directly, or they can be
+unpacked into a directory.
+.sp
+The order of sources is important. Files from later sources will replace
+the same files in previous sources.
+.sp
+If you pass a skelcd\-installer\-<PRODUCT> or tftpboot\-installation\-<PRODUCT>
+RPM (or a directory with the same layout) \- mkmedia will handle these
+specially. These packaged contain the complete installation system and mkmedia
+will extract the relevant parts to update the installer on the medium.
+.SS "Hybrid mode notes"
+.sp
+Hybrid mode means the image can be used both as an ISO for a DVD or
+directly as a disk image. In other words, there is a partition table
+added to the ISO image, either GPT or MBR or both.
+.sp
+If you need UEFI support, you will get two paritions: one for the UEFI
+image (the EFI System Partition), one for the entire DVD.
+Without UEFI support, you get only one partition covering all files.
+.sp
+There are two variants this script supports:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+Partition 1 is the data partition starting at offset 0 and covering
+the entire ISO.
+.br
+With UEFI support, partition 2 is the EFI System Partition pointing
+somwhere inside the first partition to the UEFI boot image file.
+This produces an obviously inconsistent partition table and partitioning
+tools really don\(cqt like it.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+Without UEFI support, partition 1 is a data partition \fBnot\fP starting
+at offset 0 but still holding all data files. When you mount it, you see
+either an ISO9660 or a FAT filesystem.
+.br
+With UEFI support, partition 1 is the EFI System Partition and points to
+the UEFI boot image. Partition 2 is the data partition. Partition 1 and 2
+don\(cqt overlap. In this variant a consistent partition table is written.
+.RE
+.sp
+Normally the file system of the whole image and the file system of the main partition
+have identical data and meta data. If you need to have separate labels (volume ids) for
+both file system variants you can use the \fB\-\-volume1\fP option to set a different label
+to be used for the whole image.
+.sp
+For a detailed technical description of the ISO image layout in hybrid mode,
+see \c
+.URL "https://github.com/openSUSE/mkmedia/blob/master/layout.md" "" "."
+.sp
+There are several options to control the hybrid mode layout:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+partition table type:
+.br
+use \fB\-\-gpt\fP for a GPT, or \fB\-\-mbr\fP for a MBR, or use both \fB\-\-gpt \-\-mbr\fP to get
+a combined GPT and MBR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fB\-\-hybrid\-fs=\fP to get a partition at offset 0 (as described in point 1. above)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fB\-\-hybrid\-fs=iso\fP to get non\-overlapping partitions (as described in point 2. above)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fB\-\-no\-hybrid\fP to get a regular ISO, not suitable to boot as disk image
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fB\-\-no\-iso\fP to get a plain disk image, not usable as DVD image
+.RE
+.SS "Signing notes"
+.sp
+On all media there is a file \*(Aq/CHECKSUMS\*(Aq (or \*(Aq/content\*(Aq with the old SUSE
+layout) holding sha256 sums of all files relevant during installation. The
+file is signed and is used to ensure the integrity of the installation
+environment.
+.sp
+If you modify any file mentioned there (e.g. replacing it or implicitly
+as a result of the \fB\-\-initrd\fP or \fB\-\-boot\fP options) \*(Aq/CHECKSUMS\*(Aq is updated and
+must be re\-signed. Otherwise the installer will complain when it starts
+up. For this, mkmedia will re\-sign the file and add the public part of
+the signing key to the initrd.
+.sp
+You can specify the key to use with either the \fB\-\-sign\-key\fP or \fB\-\-sign\-key\-id\fP
+option. \fB\-\-sign\-key\fP must point to a private key file, \fB\-\-sign\-key\-id\fP is a
+key id recognized by gpg.
+.sp
+If both \fB\-\-sign\-key\fP and \fB\-\-sign\-key\-id\fP are specified, \fB\-\-sign\-key\-id\fP wins.
+.sp
+You can specify a file which contains the passphrase to the key specified with
+\fB\-\-sign\-key\fP or \fB\-\-sign\-key\-id\fP to avoid an interactive dialog to enter
+the passphrase.
+.sp
+If there\(cqs neither a \fB\-\-sign\-key\fP nor a \fB\-\-sign\-key\-id\fP option, a transient
+key is created. The public part is added to the initrd and the root
+directory of the image and the key is deleted.
+.sp
+The key file is named \*(Aqgpg\-pubkey\-xxxxxxxx\-xxxxxxxx.asc\*(Aq.
+.SS "Image signing notes"
+.sp
+mkmedia can also embed a signature of the checksum metadata into the image.
+This can be used by the \fBcheckmedia\fP tool to verify the integrity of the
+image.
+.sp
+The signature is stored in a special file that can be set with the \fB\-\-signature\-file\fP
+option. The default for SUSE\-style media is \*(Aq/.signature\*(Aq. If you set the file name to \*(Aq\*(Aq (empty string)
+the file is still created but not visible in the file system (this is the default on older SUSE media).
+.sp
+For RH\-style media, no signature file is used by default. Instead, if signing is requested,
+a signature block is created outside the data area of the ISO image. This way signing does not
+interfere with integrity checks by checkisomd5.
+.sp
+You can use \fBtagmedia\fP to display the embedded meta data.
+.sp
+The details of this embedding are described in the checkmedia documentation at
+.br
+.URL "https://raw.githubusercontent.com/openSUSE/checkmedia/master/README.adoc" "" ""
+.sp
+Note that this special signature file is always prepared. But actually signing
+the image is not the default and you have to explicitly request it with \fB\-\-sign\-image\fP.
+You can also add a signature later using \fBtagmedia\fP.
+.SS "Boot option and initrd config option notes"
+.sp
+The argument to \fB\-\-boot\fP is a space\-separated list of boot options, e.g. \fB\-\-boot "foo=1 bar zap=2"\fP.
+If an option is already used in the existng boot
+config, the option is modified in place. If it is a new option, it is appended to the
+list of boot options. You can also remove options by prefixing them with a minus sign, for example
+\fB\-\-boot "\-foo \-bar zap=123"\fP would remove options \fBfoo\fP and \fBbar\fP and add/modify opion \fBzap\fP.
+.sp
+The boot config is modified in all boot loader config files on the medium.
+Notably, on s390x, all parmfiles are adjusted.
+.sp
+There is some special magic implemented when it comes to boot options than
+can validly be specified more than once. For example \fB\-\-boot "console=ttyS0
+console=ttyS1"\fP. If a boot option is specified at least twice, it is assumed
+that the intention is to have them all added to the kernel command line. In
+this case, these options are all added without replacing any existing
+option of the same name. If you intend to replace an existing old option
+of the same name, remove the old entry explicitly with \fB"\-OPTION"\fP.
+.sp
+For example, assuming there is an existing boot loader config with options
+"console=ttyS0". Then
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+\fB\-\-boot "console=ttyS1"\fP results in "console=ttyS1"
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+\fB\-\-boot "console=ttyS1 console=ttyS2"\fP results in "console=ttyS0 console=ttyS1 console=ttyS2"
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 3." 4.2
+.\}
+\fB\-\-boot "\-console console=ttyS1 console=ttyS2"\fP results in "console=ttyS1 console=ttyS2"
+.RE
+.sp
+This magic is turned off if there are quotes ("") used in any place in the boot options. For example
+\fB\-\-boot "foo=\(rs"X\(rs""\fP. In this case, the entire boot option string is simply appended to any
+existing options verbatim.
+.sp
+Boot options are often options intended for the installation program. For
+example, passing an AutoYaST profile. In some situations this might add up to
+quite a lot of lengthy options.
+.sp
+It is, however, possible to place these options not in the boot loader config but
+put them in config files in the initrd. This gives you a pre\-configured initrd that
+can be used in various places without having to worry about getting all the boot
+options right.
+.sp
+This is also a possible way to avoid lenghty parmfiles on s390x.
+.sp
+Instead of \fB\-\-boot foo=123\fP you can use \fB\-\-initrd\-config foo=123\fP. But watch out for the different
+syntax if you set more than one option:
+\fB\-\-boot "foo=123 bar=abc"\fP vs. \fB\-\-initrd\-config foo=123 \-\-initrd\-config bar=abc\fP.
+.sp
+Be aware that boot options always take precedence over initrd config options (so the user can
+always override settings at the boot prompt). This means that if you intend to move an existing setting
+from boot config to initrd config, make sure you remove the option from the boot config.
+.sp
+For example, Fedora media set inst.stage2 (the installer root file system location) as boot option. To move it to
+the initrd, unset it there: \fB\-\-boot \-inst.stage2\fP \fB\-\-initrd\-config inst.stage2=http://example.com/foo\fP.
+.SS "Driver update notes"
+.sp
+Driver updates (DUDs) are archives (typically compressed cpio archives) that describe
+modifications to the installation system. In particular a DUD can:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+update kernel modules
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+change files in the initrd of the installation medium
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+change files in the installation system / live root of the installation medium
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+change files on the installation medium
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+change boot options
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+change installer config options
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+provide updated packages to be installed
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+add scripts to be run before and after the installer runs
+.RE
+.sp
+Not everything is possible in all situations \- check out the driver update documentation
+in the link list below for details.
+.sp
+There are two ways mkmedia can integrate DUDs into installation media:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+By adding the DUD (the archive file) to the initrd \- the installer will automatically look for DUDs
+in the initrd and apply them. Use option \fB\-\-initrd\fP for this.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+By interpreting the DUD content and applying the necessary changes to the installation medium. Use option \fB\-\-apply\-dud\fP for this.
+mkmedia logs the changes in files \*(Aq.update.ID\*(Aq (in live root) and \*(Aq.update.initrd.ID\*(Aq (in initrd).
+.RE
+.sp
+The difference between both ways is that the first method applies the DUD during the installation (the same as using
+inst.dud=URL / dud=URL boot options) while the second has everything
+done before the installation begins.
+.sp
+This matters for example for kernel modules: in the first method the
+original modules are loaded and then the driver update unloads them and
+loads the updated modules. While with the second way the updated modules are loaded
+right away.
+.sp
+Also, changes to boot options, the initrd content, or general installation media changes can only be applied successfully with
+the second method.
+.SS "Kernel update notes"
+.sp
+Normally, the \fB\-\-kernel\fP option will do what you expect but there are
+situations where it may subtly go wrong. So here is a more in\-depth explanation
+how kernel updates work.
+.sp
+The \fB\-\-kernel\fP option accepts a mix of kernel packages and kernel firmware
+packages. That is, you can update both kernel firmware and kernel modules.
+But there must be at least one kernel package.
+.sp
+As a special case if there are no kernel firmware packages
+specified in \fB\-\-kernel\fP, then the old kernel firmware files are kept (kernel firmware is typically not
+kernel version dependent).
+.sp
+The initrd typically uses a limited set of kernel modules. mkmedia will try to keep the exact list
+of modules but that may not be possible due to kernel package changes. mkmedia output will
+display the differences.
+.sp
+If you have to adjust the kernel module list, use the \fB\-\-modules\fP option. Kernel module
+dependencies are automatically resolved.
+.sp
+Note that there may be not just a single package containing kernel modules (e.g. kernel\-default)
+but several others (e.g. kernel\-default\-extra, kernel\-default\-optional) or even kmp packages with
+individual modules. If you see missing modules, you might need some of these packages as well.
+.sp
+mkmedia will not add all kernel firmware files to the initrd but only those that are required by
+the kernel modules used in the initrd.
+.sp
+For Live media, kernel modules and firmware are also present in the Live root file system. Kernel modules
+and firmware are also updated there but the complete packages are used.
+.sp
+There are two cases: 1. the \*(Aqnormal\*(Aq case (\fB\-\-rebuild\-initrd\fP is active) and 2. \fB\-\-no\-rebuild\-initrd\fP is active.
+.sp
+Note that since mkmedia 3.0 \fB\-\-rebuild\-initrd\fP is automatically acivated if \fB\-\-kernel\fP is used.
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+Old kernel modules / firmware files are removed and only files from packages specified
+in \fB\-\-kernel\fP are used. This makes initrd and Live root smaller and exactly reproduces the original
+initrd and Live root file system layouts.
+.br
+This also means that if you forgot to add sufficient kernel firmware packages in \fB\-\-kernel\fP, kernel
+firmware files might be missing.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+New kernel modules / firmware files are added to initrd and Live root. This means your initrd and Live root file system contain
+both the old kernel tree and the new one (making it noticeably larger).
+.br
+If you included kernel firmware packages in \fB\-\-kernel\fP then kernel firmware files from these packages
+are added as well, possibly replacing old kernel firmware files with the same name.
+.RE
+.sp
+In both cases, if you run out of space in the Live root file system, use \fB\-\-instsys\-size\fP to increase the
+file system size as needed.
+.sp
+Note on usrmerge kernels: kernel packages (and kernel firmware packages) come in two variants: older packages
+with files stored in \*(Aq/lib\*(Aq and (typically) newer packages with files stored in \*(Aq/usr/lib\*(Aq.
+mkmedia will accept both and adjust the package layout to the one expected in initrd and Live root.
+.SS "Kernel compression notes"
+.sp
+For SUSE installation media, kernel modules and firmware files are kept in a
+separate squashfs image (\*(Aqparts/00_lib\*(Aq) within the initrd.
+.sp
+Usually, kernel firmware files and kernel modules are compressed to reduce size.
+.sp
+In certain situations it may be better to keep individual kernel modules or
+kernel firmware files uncompressed and rely on the squashfs file system compression instead.
+.sp
+Or use no squashfs file system compression and rely on the initrd compression.
+.sp
+To fine\-tune this, use the \fB\-\-no\-compression\fP option.
+.sp
+Setting it to \*(Aqmodules\*(Aq will uncompress all kernel modules. \*(Aqfirmware\*(Aq will uncompress
+firmware files and \*(Aqsquashfs\*(Aq will turn off squashfs file system compression.
+.sp
+The current setting is stored in the \*(Aq.no_compression\*(Aq file the initrd.
+.sp
+For example, \fB\-\-no\-compression=firmware,modules,squashfs\fP turns off compression
+everywhere. This results in the smallest compressed initrd size \- but it also results in
+the largest uncompressed initrd size.
+.sp
+Note that any new \fB\-\-no\-compression\fP setting replaces the old setting entirely.
+For example, \fB\-\-no\-compression=modules\fP will not additionally turn off compression for
+kernel modules but means only kernel modules are uncompressed.
+.sp
+Note also that you almost certainly do not want to use \fB\-\-no\-compression\fP together
+with \fB\-\-no\-rebuild\-initrd\fP.
+.SS "Add\-on notes"
+.sp
+The add\-on created here is just a repository, not a full add\-on product.
+If you need the latter, you will have to create that on your own and add
+it to the iso.
+.sp
+Although it auto\-generates a name for the repository, it\(cqs not a very
+creative one and it\(cqs probably a good idea to choose one explicitly
+using the \fB\-\-addon\-name\fP option.
+.sp
+The default installation repositories have priority 99. Any smaller
+number for the add\-on repository will prefer the add\-on packages even
+though the package version number is smaller than in the standard
+repository.
+.sp
+The default priority of 60 is chosen to be between the priority of the
+default installation repositories (99) and the repositories created by
+driver updates (50).
+.SS "Repository notes"
+.sp
+mkmedia supports media with three different installers:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+YaST (SLE\-15, Leap\-15, Tumbleweed)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+Agama (SLE\-16, Leap\-16, Tumbleweed)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 3." 4.2
+.\}
+Anaconda (Multi\-Linux, Fedora, RHEL)
+.RE
+.sp
+Starting an installation is a three\-stage process: (a) kernel and initrd are loaded,
+then (b) a program in the initrd (dracut or linuxrc) loads the installation system and
+starts the installer and then (c) the installer runs an installation using a software repository.
+.sp
+Each of the three installation programs has its own way of setting the installation system and
+software repository locations.
+.SS "1. Repository notes (YaST)"
+.sp
+YaST supports two types of repositories:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+The \*(Aqclassical\*(Aq (old) variant which has a \*(Aq/content\*(Aq file with product meta data and file checksums at the
+repo location and package meta data in a sub\-directory \*(Aqsuse/setup/descr\*(Aq.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+A repo\-md repository which uses \*(Aq/.treeinfo\*(Aq for product meta data, \*(Aq/CHECKSUMS\*(Aq for file checksums,
+and has package meta data in a \*(Aqrepodata\*(Aq sub\-directory.
+.RE
+.sp
+A repository usually also contains the installation system. If so, the
+image files are placed in a \*(Aqboot/<ARCH>\*(Aq sub\-directory and the installer
+can simply be loaded from the repository.
+.sp
+But if it is just a plain repository without the installation system the
+installer has to be loaded from somewhere else.
+.sp
+Use the \fB\-\-no\-instsys\-in\-repo\fP option to tell mkmedia that it can be loaded
+from a local disk or dvd. It will be searched for on any mountable local
+device at startup.
+.sp
+You can override this using the \fB\-\-instsys\-url\fP option to load the
+installation system from any location. Please look at the linuxrc
+documentation at
+.br
+\c
+.URL "https://en.opensuse.org/SDB:Linuxrc" ""
+.br
+for details before using this option.
+.sp
+The installer normally uses an internal list of repository locations that are
+tried in turn. You can change it using the \fB\-\-defaultrepo\fP option. For example,
+\fB\-\-defaultrepo=cd:/,http://foo/bar\fP means to check the local dvd drive first and
+then try via network at \c
+.URL "http://foo/bar" "" "."
+.sp
+SLE\-15 uses a registration server, it does not use the \fB\-\-defaultrepo\fP setting to locate
+the installation repository.
+.sp
+The \fB\-\-net\fP option is just a short hand for \fB\-\-defaultrepo=cd:/,hd:/,<NET_URL>\fP.
+.SS "2. Repository notes (Agama)"
+.sp
+Use the \fBroot=live:<URL>\fP setting to point to the installation system. The installation system is a
+squashfs file system image (ususally \*(AqLiveOS/squashfs.img\*(Aq) found on the installation media.
+.sp
+The default setting loads it from the local disk or dvd you booted from. You can place it on a server and
+load it via network if you want.
+.sp
+Use either \fB\-\-boot root=live:...\fP or \fB\-\-initrd\-config root=live:...\fP to set this option.
+.sp
+The software repository location can be changed using \fBinst.install_url=<URL>\fP. Set it either via \fB\-\-boot\fP or \fB\-\-initrd\-config\fP.
+.SS "3. Repository notes (Anaconda)"
+.sp
+Use the \fBinst.stage2=<URL>\fP setting to point to an unpacked installation medium. The installation system
+is a squashfs file system image (usually \*(Aqimages/install.img\*(Aq) that is located automatically in the unpacked
+installation medium tree.
+.sp
+The default setting loads it from the local disk or dvd you booted from. You can place it on a server and
+load it via network if you want.
+.sp
+Use either \fB\-\-boot root=live:...\fP or \fB\-\-initrd\-config root=live:...\fP to set this option.
+.sp
+Note that \fBinst.stage2\fP is typically set as boot option. You must remove it from the boot options if you want to set it via \fB\-\-initrd\-config\fP.
+.sp
+See \fBBoot option and initrd config option notes\fP.
+.sp
+The software repository location can be changed using \fBinst.repo=<URL>\fP. Set it either via \fB\-\-boot\fP or \fB\-\-initrd\-config\fP.
+.SS "Product module notes"
+.sp
+In SLE 15 the product is split into several repositories called \*(Aqmodules\*(Aq
+(don\(cqt confuse this with kernel modules). These modules are distributed
+over several media or in separate directories on a network installation
+server.
+.sp
+mkmedia lets you combine the installation medium together with the
+modules you need into a single medium.
+.sp
+Check the available modules with \fB\-\-list\-repos\fP and then pick the modules
+you need with \fB\-\-include\-repos\fP.
+.SS "Fedora/RHEL notes"
+.sp
+mkmedia will by default create media with a Fedora/RHEL\-style hybrid mode
+(hybrid GPT+MBR, data partition starting at offset 0).
+You can change that to create a SUSE\-style hybrid mode
+(partition table with non\-overlapping partitions)
+by adding option \fB\-\-hybrid\-fs=iso\fP.
+.sp
+See \fBHybrid mode notes\fP above for more details.
+.sp
+Notes
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+You can use \fB\-\-sign\-image\fP to create signed images. The image
+signature can be verified with checkmedia. checkisomd5 can only verify the
+embedded MD5 sums.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+You can use other digests instead of MD5 using \fB\-\-digest DIGEST\fP but
+checkisomd5 cannot verify these images. You will have to use checkmedia instead.
+.RE
+.SS "UEFI boot notes"
+.sp
+There are two ways UEFI firmware finds boot files on our media:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+by running the boot loader located below the \*(Aq/EFI\*(Aq directory
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+by locating a FAT file system image via the El\-Torito standard and running
+the boot loader stored there; this FAT file system image contains the same \*(Aq/EFI\*(Aq directory structure
+.RE
+.sp
+The \fB\-\-uefi\fP option refers to method 2.
+.sp
+Note that this FAT file system image might not be visible on the medium (e.g. KIWI produced media hide the file).
+If it is visible, it has names like \*(Aq/boot/x86_64/efi\*(Aq, \*(Aq/boot/x86_64/loader/efiboot.img\*(Aq, \*(Aq/images/efiboot.img\*(Aq, or similar.
+.sp
+You can control the visibility of this image with option \fB\-\-uefi\-image\fP (to make it visible) or \fB\-\-no\-uefi\-image\fP (to hide it).
+If this option is not given, mkmedia will try to keep the visibility as it was on the source medium.
+.sp
+If this FAT file system image is missing (or hidden) or files in the \*(Aq/EFI\*(Aq directory (on the medium) have changed,
+mkmedia will create a new FAT file system image based on the updated \*(Aq/EFI\*(Aq directory content.
+.SS "Crypto notes"
+.sp
+The \fB\-\-crypto\fP option allows you to create an encrypted installation disk.
+Note that this image is explicitly \fBnot\fP bootable as cd/dvd (no hybrid
+image). It is both legacy BIOS and UEFI bootable, though.
+.sp
+Everything except the plain grub2 binaries is encrypted on a LUKS
+partition. Including the installer specific boot config. So if you for
+example put some password into the default boot options via \fB\-\-boot\fP this
+is also stored in the encrypted part.
+.sp
+At the moment only x86_64 is supported. And you have to run mkmedia on a
+machine that has grub2\-i386\-pc installed (to get the legacy BIOS setup).
+.sp
+Unlike the usual setup, grub2 is used for both legacy BIOS and UEFI
+booting. So the boot screen really looks identical in both cases.
+.sp
+The default image size is chosen to leave only minimal free space. To
+adjust the image size to your needs, use the \fB\-\-size\fP option.
+.sp
+\fBImportant\fP
+.sp
+For this to work, the \*(Aqcryptsetup\*(Aq tools must be available in the
+installer\(cqs initrd. This is not the case for older media (prior to
+recent Tumbleweed and SLE/Leap 15).
+.sp
+If you work with these old media you must also add the following two
+packages to the initrd explicitly:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+cryptsetup
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+libpwquality1
+.RE
+.sp
+You can find the required versions on the install medium in either the
+/suse/x86_64 or /x86_64 directory. Copy them to some temporary location
+and add
+.br
+\fB\-\-initrd cryptsetup.rpm \-\-initrd libpwquality1.rpm\fP
+.br
+to the mkmedia command line.
+.SS "Configuration file"
+.sp
+mkmedia reads \f(CR$HOME/.mkmediarc\fP at startup.
+.sp
+\fBsudo\fP=\fICOMMAND\fP
+.RS 4
+To access existing ISO image files you will need root privileges.
+(It will be mounted.) This entry lets you specify a command granting
+you root privileges.
+.RE
+.sp
+\fBsign\-key\fP=\fIFILE\fP
+.RS 4
+File name of the private key file with the signing key. The
+same as the \fB\-\-sign\-key\fP option.
+.br
+See \fBSigning notes\fP above.
+.RE
+.sp
+\fBsign\-key\-id\fP=\fIKEY_ID\fP
+.RS 4
+Key id of the signing key. The same as the \fB\-\-sign\-key\-id\fP option.
+.br
+See \fBSigning notes\fP above.
+.RE
+.SH "EXAMPLES"
+.sp
+.if n .RS 4
+.nf
+.fam C
+# create foo.iso from /foo_dir
+mkmedia \-\-create foo.iso /foo_dir
+
+# create foo.iso from bar.iso and integrate files from /foo_dir
+mkmedia \-\-create foo.iso bar.iso /foo_dir
+
+# create foo.iso from /foo_dir, no hybrid mode
+mkmedia \-\-create foo.iso \-\-no\-hybrid /foo_dir
+
+# create foo.iso from old.iso and add some boot option
+mkmedia \-\-create foo.iso \-\-boot \*(Aqdebug=1\*(Aq old.iso
+
+# create foo.iso from old.iso and add content of directory foo_bar to the initrd
+mkmedia \-\-create foo.iso \-\-initrd foo_bar old.iso
+
+# create foo.iso from old.iso and add package bar to the initrd
+mkmedia \-\-create foo.iso \-\-initrd bar.rpm old.iso
+
+# create foo.iso from old.iso and add a driver update to the initrd
+mkmedia \-\-create foo.iso \-\-initrd bar.dud old.iso
+
+# create foo.iso from old.iso and add package bar to rescue system
+mkmedia \-\-create foo.iso \-\-rescue bar.rpm old.iso
+
+# create foo.iso from live.iso and add package bar to Live system
+mkmedia \-\-create foo.iso \-\-instsys bar.rpm live.iso
+
+# create foo.iso from live.iso and update kernel to kernel\-default.rpm
+mkmedia \-\-create foo.iso \-\-kernel kernel\-default.rpm \-\- live.iso
+
+# create foo.iso from live.iso and increase Live root file system by 1 GiB
+mkmedia \-\-create foo.iso \-\-live\-root\-size +1G live.iso
+
+# create new iso from sles.iso taking an updated installer from tftpboot\-installation\-* package
+mkmedia \-\-create new.iso sles.iso tftpboot\-installation\-SLE.rpm
+.fam
+.fi
+.if n .RE
+.sp
+Find more usage examples here: \c
+.URL "https://github.com/openSUSE/mkmedia/blob/master/HOWTO.md" "" ""
+.SH "SEE ALSO"
+.sp
+\fBverifymedia\fP(1), \fBcheckmedia\fP(1), \fBtagmedia\fP(1), \fBmkdud(1)\fP.
+.SH "LINKS"
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+extensive usage summary: \c
+.URL "https://www.suse.com/c/make\-your\-own\-suse\-dvd\-tooling\-for\-suse\-and\-multi\-linux\-installation\-live\-media" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+the same, locally: \c
+.URL "file:///usr/share/doc/packages/mksusecd/suse_blog.html" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+mkmedia web site: \c
+.URL "https://github.com/openSUSE/mkmedia" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+more documentation: \c
+.URL "file:///usr/share/doc/packages/mksusecd" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+get latest version: \c
+.URL "https://github.com/openSUSE/mkmedia?tab=readme\-ov\-file#downloads" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+driver update documentaion: \c
+.URL "https://github.com/openSUSE/mkdud/blob/master/README.md" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+YaST, linuxrc options: \c
+.URL "https://en.opensuse.org/SDB:Linuxrc" "" ""
+(linuxrc, YaST)
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+dracut options: \c
+.URL "https://github.com/dracutdevs/dracut/blob/master/man/dracut.cmdline.7.asc" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+Agama options: \c
+.URL "https://agama\-project.github.io/docs/user/reference/boot_options" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+Anaconda options: \c
+.URL "https://anaconda\-installer.readthedocs.io/en/latest/boot\-options.html" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+openSUSE Build Service: \c
+.URL "https://build.opensuse.org" "" ""
+.RE
