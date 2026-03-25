@@ -42,6 +42,12 @@ Show more detailed messages. Can be repeated to log even more.
 *--version*::
 Show mkmedia version.
 
+*--mkisofs*::
+Use mkiosfs to build ISO images (default if available).
+
+*--xorriso*::
+Use xorriso to build ISO images.
+
 *--dry-run*::
 Do everything except writing the final image.
 

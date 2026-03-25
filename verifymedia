@@ -680,6 +680,8 @@ Verify SUSE installation media.
 
       --ignore TOPIC              Ignore specific test results. The test is still run but any failures
                                   are not counted. The option can be repeated to exclude several tests.
+      --mkisofs                   Use mkiosfs to read ISO images (default if available).
+      --xorriso                   Use xorriso to read ISO images.
       --verbose                   Increase log level.
       --version                   Show verifymedia version.
       --save-temp                 Keep temporary files.

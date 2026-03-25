@@ -167,17 +167,28 @@ sub copy_file;
 sub prepare_mkisofs;
 sub build_filelist;
 sub update_filelist;
-sub run_mkisofs;
+sub run_iso_build;
+sub run_iso_build_mkisofs;
+sub run_iso_build_xorriso;
 sub read_sector;
 sub write_sector;
 sub fix_catalog;
 sub relocate_catalog;
-sub rerun_mkisofs;
+sub rerun_iso_build;
 sub run_isohybrid;
 sub run_isozipl;
 sub run_syslinux;
 sub run_createrepo;
+sub get_iso9660_info;
+sub get_iso9660_info_mkisofs;
+sub get_iso9660_info_xorriso;
 sub isols;
+sub isols_mkisofs;
+sub isols_xorriso;
+sub iso_unpack;
+sub iso_unpack_cmd;
+sub iso_unpack_cmd_mkisofs;
+sub iso_unpack_cmd_xorriso;
 sub find_magic;
 sub meta_iso;
 sub meta_fat;
@@ -335,6 +346,8 @@ my $opt_tmp_dir;
 my $opt_dry_run;
 my $opt_dud_dist;
 
+my $iso_backend;
+
 Getopt::Long::Configure("gnu_compat");
 
 GetOptions(
@@ -428,6 +441,8 @@ GetOptions(
   'mount-iso'        => \$opt_mount_iso,
   'no-mount-iso'     => sub { $opt_mount_iso = 0 },
   'initrd-config=s'  => $opt_initrd_options,
+  'mkisofs'          => sub { $iso_backend = "mkisofs" },
+  'xorriso'          => sub { $iso_backend = "xorriso" },
   'dry-run'          => \$opt_dry_run,
   'temp-dir|tmp-dir=s' => \$opt_tmp_dir,
   'save-temp|save-tmp' => \$opt_save_temp,
@@ -473,6 +488,19 @@ if(defined $opt_tmp_dir) {
 umask 0022;
 
 $ENV{PATH} = "$LIBEXECDIR/mkmedia:/usr/bin:/bin:/usr/sbin:/sbin";
+
+if(!$iso_backend) {
+  $iso_backend = "xorriso" if -x("/usr/bin/xorriso");
+  $iso_backend = "mkisofs" if -x("/usr/bin/isoinfo") && -x("/usr/bin/mkisofs");
+}
+
+if($iso_backend eq "xorriso" && ! -x("/usr/bin/xorriso")) {
+  die "xorriso missing - install xorriso package\n"
+}
+
+if($iso_backend eq "mkisofs" && ! (-x("/usr/bin/isoinfo") && -x("/usr/bin/mkisofs"))) {
+  die "mkisofs missing - install mkisofs package\n"
+}
 
 if($>) {
   if($opt_rebuild_initrd == 2) {
@@ -649,8 +677,7 @@ if($opt_create || $opt_list_repos) {
         else {
           print "unpacking $_\n" if $opt_verbose >= 2;
           $d = $tmp->dir();
-          system "cd $d && isoinfo -i '" . abs_path($_) . "' -RJX 2>/dev/null && chmod -R a=r,a=rX,u+w ."
-            and die "$_: ISO unpacking failed\n";
+          iso_unpack $_, $d;
         }
         $iso_cnt++;
         push @sources, { dir => $d, real_name => $_, type => 'iso' };
@@ -906,7 +933,7 @@ if($opt_create || $opt_list_repos) {
     }
   }
 
-  run_mkisofs;
+  run_iso_build;
 
   if($two_runs) {
     if($opt_crypto) {
@@ -916,7 +943,7 @@ if($opt_create || $opt_list_repos) {
       exit
     }
 
-    rerun_mkisofs;
+    rerun_iso_build;
   }
 
   fix_catalog;
@@ -989,6 +1016,8 @@ General options:
 
       --verbose                   Show more detailed messages. Can be repeated to log even more.
       --version                   Show mkmedia version.
+      --mkisofs                   Use mkiosfs to build ISO images (default if available).
+      --xorriso                   Use xorriso to build ISO images.
       --dry-run                   Do everything except writing the final image.
       --tmp-dir TMPDIR            Use TMPDIR as temporary directory (default: /tmp).
       --save-tmp                  Keep temporary files.
@@ -1770,7 +1799,8 @@ sub prepare_mkisofs
   my $iso_catalog;
 
   # general options
-  $mkisofs->{options} .= " -duplicates-once -l -r -f -pad -input-charset utf8 -o '$iso_file'";
+  $mkisofs->{options} .= " -duplicates-once" if $iso_backend eq "mkisofs";
+  $mkisofs->{options} .= " -l -r -f -pad -input-charset utf8 -o '$iso_file'";
   $mkisofs->{options} .= " -V '" . substr($opt_volume, 0, 32) . "'";
   $mkisofs->{options} .= " -A '" . substr($opt_application, 0, 128) . "'";
   $mkisofs->{options} .= " -p '" . substr($opt_preparer, 0, 128) . "'";
@@ -1821,6 +1851,7 @@ sub prepare_mkisofs
       $s = (($s + 2047) >> 11) << 2;
       $s = 1 if $s == 0 || $s > 0xffff;
       push @{$mkisofs->{sort}}, "$f 1000001";
+      push @{$mkisofs->{xorriso_sort}}, "1000001 /$efi_file";
       $mkisofs->{options} .=
         " -eltorito-alt-boot -no-emul-boot -boot-load-size $s -b $_->{$t}{base}";
       if($hide) {
@@ -1854,6 +1885,7 @@ sub prepare_mkisofs
 
   if($boot_catalog) {
     $boot_catalog .= "/boot.catalog";
+    $mkisofs->{xorriso_boot_catalog} = "/$boot_catalog";
     push @{$mkisofs->{sort}}, "$tmp_new/$boot_catalog 4";
     $mkisofs->{options} .= " -c $boot_catalog -hide $boot_catalog";
     $mkisofs->{options} .= " -hide-joliet $boot_catalog" if $opt_joliet;
@@ -1867,6 +1899,7 @@ sub prepare_mkisofs
   }
 
   push @{$mkisofs->{sort}}, "$sf 1000000";
+  push @{$mkisofs->{xorriso_sort}}, "1000000 /glump";
 
   my $sf = fname $opt_signature_file;
 
@@ -1883,6 +1916,9 @@ sub prepare_mkisofs
   }
 
   push @{$mkisofs->{sort}}, "$sf 999999";
+  if($signature_file_used) {
+    push @{$mkisofs->{xorriso_sort}}, "999999 /$opt_signature_file";
+  }
 
   # hide name if it is "glump" or 'glumps'
   $mkisofs->{options} .= " -hide glump -hide glumps";
@@ -1907,11 +1943,23 @@ sub prepare_mkisofs
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# run_mkisofs()
+sub run_iso_build
+{
+  if($iso_backend eq 'xorriso') {
+    run_iso_build_xorriso @_;
+  }
+  elsif($iso_backend eq 'mkisofs') {
+    run_iso_build_mkisofs @_;
+  }
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# run_iso_build_mkisofs()
 #
 # Build actual mkisofs command line and run it.
 #
-sub run_mkisofs
+sub run_iso_build_mkisofs
 {
   my $log;
   my $ok;
@@ -1983,6 +2031,88 @@ sub run_mkisofs
   die "Error: $mkisofs->{command} failed\n" . $joliet_msg if !$ok;
 }
 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub run_iso_build_xorriso
+{
+  my $log;
+  my $ok;
+  my $cmd;
+
+  # create sort file
+  if($mkisofs->{sort}) {
+    if(open my $fh, ">$tmp_sort") {
+      print $fh "$_\n" for @{$mkisofs->{sort}};
+      close $fh;
+    }
+  }
+
+  # create exclude file
+  if($mkisofs->{exclude}) {
+    if(open my $fh, ">$tmp_exclude") {
+      print $fh "$_\n" for @{$mkisofs->{exclude}};
+      close $fh;
+    }
+  }
+
+  # create file with file list
+  if($mkisofs->{filelist}) {
+    if(open my $fh, ">$tmp_filelist") {
+      print $fh "$_\n" for @{$mkisofs->{filelist}};
+      close $fh;
+    }
+  }
+
+  my $xorriso_options = $mkisofs->{options};
+
+  $xorriso_options .= " --boot-catalog-hide";
+
+  $cmd = "xorriso -as mkisofs $xorriso_options";
+  for my $xs (@{$mkisofs->{xorriso_sort}}) {
+    $cmd .= " --sort-weight $xs";
+  }
+
+  $cmd .= " -- -find / -wholename $mkisofs->{xorriso_boot_catalog} -exec sort_weight 10000" if $mkisofs->{xorriso_boot_catalog};
+
+  print "running:\n$cmd\n" if $opt_verbose >= 2;
+
+  # seems to be necessary, else some changes are lost...
+  system "sync";
+
+  if(open my $fh, "$cmd 2>&1 |") {
+    $| = 1;
+    $ok = 1;	# sometimes mkisofs doesn't show any progress, so set ok here...
+    while(<$fh>) {
+      if(/^\s*(\d*\.\d)\d%/) {
+        $ok = 1;
+        show_progress $1;
+      }
+      else {
+        $log .= $_;
+      }
+    }
+    show_progress 100 if $ok;
+    print "\n" if $progress_end == 100;
+    close $fh;
+    # printf STDERR "ret = $?\n";
+    $ok = 0 if $?;
+  }
+
+  $ok = 0 if $log =~ /mkisofs: Permission denied/;
+
+  my $joliet_msg;
+  if($log =~ /mkisofs: Cannot use Joliet/) {
+    $joliet_msg =
+      "\n" .
+      "Joliet file names are limited to 103 chars.\n" .
+      "Some file names were longer.\n\n" .
+      "Run mkmedia with the --no-joliet option to avoid this error.\n";
+  }
+
+  print $log if $opt_verbose >= 3 || (!$ok && (!$joliet_msg || $opt_verbose >= 1));
+
+  die "Error: $mkisofs->{command} failed\n" . $joliet_msg if !$ok;
+}
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # buf = read_sector(nr)
@@ -2172,11 +2302,11 @@ sub relocate_catalog
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# rerun_mkisofs()
+# rerun_iso_build()
 #
 # Prepare hybrid image and run mkisofs again.
 #
-sub rerun_mkisofs
+sub rerun_iso_build
 {
   my $iso_file_list = isols;
   my $iso_magic = find_magic($iso_file_list);
@@ -2200,7 +2330,7 @@ sub rerun_mkisofs
     $mkisofs->{options} .= " -V '" . substr($opt_volume1, 0, 32) . "'";
   }
 
-  run_mkisofs;
+  run_iso_build;
 }
 
 
@@ -2386,6 +2516,66 @@ sub run_createrepo
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub get_iso9660_info
+{
+  my $data = {};
+
+  if($iso_backend eq 'xorriso') {
+    $data = get_iso9660_info_xorriso @_;
+  }
+  elsif($iso_backend eq 'mkisofs') {
+    $data = get_iso9660_info_mkisofs @_;
+  }
+
+  return $data;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub get_iso9660_info_xorriso
+{
+  my $iso = $_[0];
+  my $info = `xorriso -indev '$iso' -pvd_info -- -report_el_torito plain -- -assess_indev_features plain 2>/dev/null`;
+  my $data = {};
+
+  $data->{system_id} = $1 if $info =~ /^System Id\s*: (.*)/m;
+  $data->{volume_id} = $1 if $info =~ /^Volume Id\s*: (.*)/m;
+  $data->{publisher_id} = $1 if $info =~ /^Publisher Id\s*: (.*)/m;
+  $data->{application_id} = $1 if $info =~ /^App Id\s*: (.*)/m;
+  $data->{preparer_id} = $1 if $info =~ /^Preparer Id\s*: (.*)/m;
+
+  $data->{eltorito} = $1 if $info =~ /^El Torito catalog\s*: (\d+)/m;
+
+  $data->{joliet} = 1 if $info =~ /^Indev feature: joliet=1/m;
+  $data->{rockridge} = 1 if $info =~ /^Indev feature: eltorito=1/m;
+
+  return $data;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub get_iso9660_info_mkisofs
+{
+  my $iso = $_[0];
+  my $info = `isoinfo -d -i '$iso' 2>/dev/null`;
+  my $data = {};
+
+  return unless $info =~ /CD-ROM is in ISO 9660 format/;
+
+  $data->{system_id} = $1 if $info =~ /^System id: (.*)/m;
+  $data->{volume_id} = $1 if $info =~ /^Volume id: (.*)/m;
+  $data->{publisher_id} = $1 if $info =~ /^Publisher id: (.*)/m;
+  $data->{application_id} = $1 if $info =~ /^Application id: (.*)/m;
+  $data->{preparer_id} = $1 if $info =~ /^Data preparer id: (.*)/m;
+  $data->{joliet} = 1 if $info =~ /^Joliet .* found/m;
+  $data->{rockridge} = 1 if $info =~ /^Rock Ridge .* found/m;
+  $data->{eltorito} = $1 if $info =~ /^El Torito .* found, boot catalog is in sector (\d+)/m;
+
+  return $data;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ISO file list sorted by start address.
 #
 # Return ref to array with files.
@@ -2394,35 +2584,12 @@ sub isols
 {
   my $files;
 
-  open my $fd, "isoinfo -R -l -i $iso_file 2>/dev/null |";
-
-  my $dir = "/";
-
-  while(<$fd>) {
-    if(/^Directory listing of\s*(\/.*\/)/) {
-      $dir = $1;
-      next;
-    }
-
-    # isoinfo format change
-    # cf. https://sourceforge.net/p/cdrtools/mailman/message/35173024
-    s/^\s*\d+\s+//;
-
-    # note: file start can be negative for zero-size files
-
-    if(/^(.)(.*)\s\[\s*(-?\d+)(\s+\d+)?\]\s+(.*?)\s*$/) {
-      my $type = $1;
-      my @x = split ' ', $2;
-      my $start = $3 + 0;
-      $start = 0 if $start < 0;
-      $type = ' ' if $type eq '-';
-      if($5 ne '.' && $5 ne '..') {
-        push @$files, { name => "$dir$5", type => $type, start => $start, size => $x[4] };
-      }
-    }
+  if($iso_backend eq 'xorriso') {
+    $files = isols_xorriso @_;
   }
-
-  close $fd;
+  elsif($iso_backend eq 'mkisofs') {
+    $files = isols_mkisofs @_;
+  }
 
   $files = [ sort { $a->{start} <=> $b->{start} } @$files ] if $files;
 
@@ -2445,9 +2612,133 @@ sub isols
     }
   }
 
-  # printf "%6d\t%s %8d %s\n", $_->{start}, $_->{type}, $_->{size}, $_->{name} for @$files;
+  # print Dumper $files;
 
   return $files;
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ISO file list sorted by start address.
+#
+# Return ref to array with files.
+#
+sub isols_mkisofs
+{
+  my $files;
+
+  open my $fd, "isoinfo -R -l -i '$iso_file' 2>/dev/null |";
+
+  my $dir = "/";
+
+  while(<$fd>) {
+    if(/^Directory listing of\s*(\/.*\/)/) {
+      $dir = $1;
+      next;
+    }
+
+    # isoinfo format change
+    # cf. https://sourceforge.net/p/cdrtools/mailman/message/35173024
+    s/^\s*\d+\s+//;
+
+    # note: file start can be negative for zero-size files
+
+    if(/^(.)(.*)\s\[\s*(-?\d+)(\s+\d+)?\]\s+(.*?)\s*$/) {
+      my $type = $1;
+      my @x = split ' ', $2;
+      $type = ' ' if $type eq '-';
+      if($5 ne '.' && $5 ne '..') {
+        my $start = $3 + 0;
+        $start = 0 if $start < 0;
+        my $name = "$dir$5";
+        push @$files, { name => $name, type => $type, start => $start, perm => $x[0], uid => $x[2], gid => $x[3], size => $x[4] };
+      }
+    }
+  }
+
+  close $fd;
+
+  return $files;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ISO file list sorted by start address.
+#
+# Return ref to array with files.
+#
+sub isols_xorriso
+{
+  my $files;
+  my $lba = {};
+
+  open my $fd, "xorriso -indev '$iso_file' -find / -exec report_lba -- -find / -exec lsdl 2>/dev/null |";
+
+  # note: directories have start 0
+
+  while(<$fd>) {
+    if(/^File data lba:[^,]+,\s*(\d+).*?'(.*)'$/) {
+      $lba->{$2} = $1;
+      next;
+    }
+
+    if(/^(\S)(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+).*? '(.*)'$/) {
+      my $type = ' ';
+      $type = 'd' if $1 eq 'd';
+      next if $7 eq '/';
+      push @$files, { name => $7, type => $type, start => ($lba->{$7} ? $lba->{$7} : 0), perm => $2, uid => $4, gid => $5, size => $6 };
+    }
+  }
+
+  close $fd;
+
+  return $files;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub iso_unpack
+{
+  my $cmd;
+
+  $cmd = iso_unpack_cmd @_;
+
+  system "$cmd" and die "$_: ISO unpacking failed\n";
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub iso_unpack_cmd
+{
+  my $cmd;
+
+  if($iso_backend eq 'xorriso') {
+    $cmd = iso_unpack_cmd_xorriso @_;
+  }
+  elsif($iso_backend eq 'mkisofs') {
+    $cmd = iso_unpack_cmd_mkisofs @_;
+  }
+
+  return $cmd;
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub iso_unpack_cmd_mkisofs
+{
+  my $iso  = $_[0];
+  my $dir  = $_[1];
+
+  return "cd '$dir' && isoinfo -i '" . abs_path($iso) . "' -R -X -j UTF-8 2>/dev/null && chmod -R a=r,a=rX,u+w '$dir'";
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub iso_unpack_cmd_xorriso
+{
+  my $iso  = $_[0];
+  my $dir  = $_[1];
+
+  return "xorriso -osirrox on -indev '$iso' -extract / '$dir' 2>/dev/null && chmod -R a=r,a=rX,u+w '$dir'";
 }
 
 
@@ -2471,11 +2762,13 @@ sub find_magic
 
   die "$iso_file: $!\n" unless open $iso_fh, "<", $iso_file;
 
+  # print Dumper($files);
+
   found: for (@$files) {
     next unless $_->{type} eq ' ';
     last if $cnt++ >= 8;			# check just first 8 files
     my $buf;
-    for (my $i = 0; $i >= -16; $i--) {		# go back up to 16 blocks
+    for (my $i = 0; $i >= -64; $i--) {		# go back up to 64 blocks
       seek $iso_fh, ($_->{start} + $i) << 11, 0;
       sysread $iso_fh, $buf, length $magic_id;
       $start = $_->{start} + $i, last found if $buf eq $magic_id;
@@ -4144,16 +4437,13 @@ sub set_mkisofs_metadata
 
   # first, try using old values, if we remaster an image
   if($sources[0]{type} eq 'iso') {
-    if(open my $f, "isoinfo -d -i $sources[0]{real_name} 2>/dev/null |") {
-      while(<$f>) {
-        $vol_id = $1 if !defined $vol_id && /^Volume id:\s*(.*?)\s*$/ && $1 ne "" && $1 ne "CDROM";
-        $opt_vendor = $1 if !defined $opt_vendor && /^Publisher id:\s*(.*?)\s*$/ && $1 ne "";
-        $opt_application = $1 if !defined $opt_application && /^Application id:\s*(.*?)\s*$/ && $1 ne "";
-        $opt_preparer = $1 if !defined $opt_preparer && /^Data preparer id:\s*(.*?)\s*$/ && $1 ne "";
-      }
-      close $f;
-      undef $opt_application if $opt_application =~ /^GENISOIMAGE/;
-    }
+    my $iso9660_info = get_iso9660_info $sources[0]{real_name};
+    print Dumper($iso9660_info);
+    $vol_id ||= $iso9660_info->{volume_id};
+    $opt_vendor ||= $iso9660_info->{publisher_id};
+    $opt_application ||= $iso9660_info->{application_id};
+    $opt_preparer ||= $iso9660_info->{preparer_id};
+    undef $opt_application if $opt_application =~ /^GENISOIMAGE/;
   }
 
   # else, build new ones based on media.1 dir
@@ -5428,11 +5718,11 @@ sub unpack_archive
       elsif($_ eq 'fs_iso9660') {
         my $abs_file = abs_path $file;
         if(!$cmd) {
-          $cmd = "cd '$dir' ; isoinfo -R -X -j UTF-8 -i '$abs_file' ; chmod --quiet -R u+w .";
+          $cmd = iso_unpack_cmd($abs_file, $dir);
         }
         else {
           my $t = $tmp->file();
-          $cmd .=  " > '$t' ; cd '$dir' ; isoinfo -R -X -j UTF-8 -i '$t' ; chmod --quiet -R u+w .";
+          $cmd .=  " > '$t' ; " . iso_unpack_cmd($t, $dir);
         }
         last;
       }
