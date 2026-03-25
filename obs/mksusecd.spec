@@ -26,18 +26,13 @@ Group:          Hardware/Other
 URL:            https://github.com/wfeldt/mksusecd
 Provides:       mkmedia = %{version}
 Source:         %{name}-%{version}.tar.xz
-%if 0%?suse_version >= 1500 || 0%?sle_version >= 120400
+%if 0%?suse_version >= 1500 || 0%?sle_version >= 120400 || 0%{?fedora} >= 40
 BuildRequires:  rubygem(asciidoctor)
-%else
-BuildRequires:  asciidoc
-%if 0%?suse_version >= 1310 || 0%?sle_version >= 120000
-BuildRequires:  libxslt-tools
-%endif
 %endif
 BuildRequires:  pkgconfig(blkid)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(uuid)
-%if %suse_version >= 1500
+%if 0%?suse_version >= 1500 || 0%{?fedora} >= 40 || 0%{?rhel} >= 8
 Requires:       createrepo-implementation
 Requires:       mkisofs
 %else
@@ -82,12 +77,12 @@ install -D -m 644 verifymedia.1 %{buildroot}%{_mandir}/man1/verifymedia.1
 %defattr(-,root,root)
 %{_bindir}/*
 %{_libexecdir}/mkmedia
-%doc README* *.md
+%doc README.isohybrid README.isozipl *.md
 %doc suse_blog.html suse_blog.adoc *.jpg
 %doc %{_mandir}/man1/mkmedia.*
 %doc %{_mandir}/man1/mksusecd.*
 %doc %{_mandir}/man1/verifymedia.*
-%if %suse_version >= 1500
+%if 0%?suse_version >= 1500
 %license COPYING*
 %else
 %doc COPYING*
