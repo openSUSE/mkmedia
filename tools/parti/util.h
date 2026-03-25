@@ -19,6 +19,8 @@ typedef struct {
   } show;
   char *export_file;
   unsigned json:1;
+  unsigned mkisofs:1;
+  unsigned xorriso:1;
 } opt_t;
 
 extern opt_t opt;
