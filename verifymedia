@@ -1085,7 +1085,7 @@ sub get_iso9660_info
 sub get_iso9660_info_xorriso
 {
   my $iso = $_[0];
-  my $info = `xorriso -indev '$iso' -pvd_info -- -report_el_torito plain -- -assess_indev_features plain 2>/dev/null`;
+  my $info = `xorriso -indev '$iso' -toc -- -pvd_info -- -report_el_torito plain 2>/dev/null`;
   my $data = {};
 
   $data->{system_id} = $1 if $info =~ /^System Id\s*: (.*)/m;
@@ -1096,8 +1096,8 @@ sub get_iso9660_info_xorriso
 
   $data->{eltorito} = $1 if $info =~ /^El Torito catalog\s*: (\d+)/m;
 
-  $data->{joliet} = 1 if $info =~ /^Indev feature: joliet=1/m;
-  $data->{rockridge} = 1 if $info =~ /^Indev feature: eltorito=1/m;
+  $data->{joliet} = 1 if $info =~ /^ISO offers\s*:.*Joliet/m;
+  $data->{rockridge} = 1 if $info =~ /^ISO offers\s*:.*Rock_Ridge/m;
 
   return $data;
 }

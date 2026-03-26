@@ -947,7 +947,10 @@ if($opt_create || $opt_list_repos) {
   }
 
   fix_catalog;
-  relocate_catalog;
+
+  if($iso_backend eq 'mkisofs') {
+    relocate_catalog;
+  }
 
   if($opt_hybrid) {
     run_isohybrid;
@@ -2076,6 +2079,8 @@ sub run_iso_build_xorriso
 
   print "running:\n$cmd\n" if $opt_verbose >= 2;
 
+  unlink $iso_file;
+
   # seems to be necessary, else some changes are lost...
   system "sync";
 
@@ -2535,7 +2540,7 @@ sub get_iso9660_info
 sub get_iso9660_info_xorriso
 {
   my $iso = $_[0];
-  my $info = `xorriso -indev '$iso' -pvd_info -- -report_el_torito plain -- -assess_indev_features plain 2>/dev/null`;
+  my $info = `xorriso -indev '$iso' -toc -- -pvd_info -- -report_el_torito plain 2>/dev/null`;
   my $data = {};
 
   $data->{system_id} = $1 if $info =~ /^System Id\s*: (.*)/m;
@@ -2546,8 +2551,8 @@ sub get_iso9660_info_xorriso
 
   $data->{eltorito} = $1 if $info =~ /^El Torito catalog\s*: (\d+)/m;
 
-  $data->{joliet} = 1 if $info =~ /^Indev feature: joliet=1/m;
-  $data->{rockridge} = 1 if $info =~ /^Indev feature: eltorito=1/m;
+  $data->{joliet} = 1 if $info =~ /^ISO offers\s*:.*Joliet/m;
+  $data->{rockridge} = 1 if $info =~ /^ISO offers\s*:.*Rock_Ridge/m;
 
   return $data;
 }
@@ -4438,7 +4443,6 @@ sub set_mkisofs_metadata
   # first, try using old values, if we remaster an image
   if($sources[0]{type} eq 'iso') {
     my $iso9660_info = get_iso9660_info $sources[0]{real_name};
-    print Dumper($iso9660_info);
     $vol_id ||= $iso9660_info->{volume_id};
     $opt_vendor ||= $iso9660_info->{publisher_id};
     $opt_application ||= $iso9660_info->{application_id};
@@ -4536,7 +4540,7 @@ sub set_mkisofs_metadata
     die "initrd unpacking failed\n" if !$orig_initrd;
 
     if(-d "$orig_initrd/etc/cmdline.d") {
-      my $config = `cat $orig_initrd/etc/cmdline.d/*.conf`;
+      my $config = `cat $orig_initrd/etc/cmdline.d/*.conf 2>/dev/null`;
       $vol_id_from_initrd = $1 if $config =~ /^root=live:(?:CD)?LABEL=(\S+)/m;
     }
   }

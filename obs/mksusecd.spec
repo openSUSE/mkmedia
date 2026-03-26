@@ -29,7 +29,7 @@ Source:         %{name}-%{version}.tar.xz
 BuildRequires:  pkgconfig(blkid)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(uuid)
-Requires:       createrepo-implementation
+Requires:       createrepo_c
 Requires:       (mkisofs or xorriso)
 Requires:       binutils
 Requires:       checkmedia >= 6.0
@@ -38,13 +38,14 @@ Requires:       cpio
 Requires:       dosfstools
 Requires:       file
 Requires:       findutils
-Requires:       gpg2
+Requires:       (gpg or gpg2)
 Requires:       gzip
 Requires:       kmod
 Requires:       mtools
+Requires:       perl-Digest-HMAC
 Requires:       perl-JSON
 Requires:       rpm
-Requires:       squashfs
+Requires:       (squashfs or squashfs-tools)
 Requires:       tar
 Requires:       util-linux
 Requires:       xz
