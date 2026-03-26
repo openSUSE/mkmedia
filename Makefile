@@ -53,8 +53,6 @@ install: isohybrid parti doc
 %.1: %_man.adoc
 	@if [ -x /usr/bin/asciidoctor ] ; then \
 	  asciidoctor -b manpage -a version=$(VERSION) $< ; \
-	elif [ -x /usr/bin/a2x ] ; then \
-	  a2x -f manpage -a version=$(VERSION) $< ; \
 	fi
 
 doc: mkmedia.1 mksusecd.1 verifymedia.1
