@@ -26,19 +26,11 @@ Group:          Hardware/Other
 URL:            https://github.com/wfeldt/mksusecd
 Provides:       mkmedia = %{version}
 Source:         %{name}-%{version}.tar.xz
-%if 0%?suse_version >= 1500 || 0%?sle_version >= 120400 || 0%{?fedora} >= 40
-BuildRequires:  rubygem(asciidoctor)
-%endif
 BuildRequires:  pkgconfig(blkid)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(uuid)
-%if 0%?suse_version >= 1500 || 0%{?fedora} >= 40 || 0%{?rhel} >= 8
 Requires:       createrepo-implementation
-Requires:       mkisofs
-%else
-Requires:       createrepo
-Requires:       genisoimage
-%endif
+Requires:       (mkisofs or xorriso)
 Requires:       binutils
 Requires:       checkmedia >= 6.0
 Requires:       coreutils
