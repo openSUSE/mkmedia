@@ -1,5 +1,5 @@
 #
-# spec file for package mksusecd
+# spec file for package mkmedia
 #
 # Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
 # Copyright (c) 2014 Steffen Winterfeldt
@@ -17,15 +17,15 @@
 #
 
 
-Name:           mksusecd
+Name:           mkmedia
 Version:        0.0
 Release:        0
 Summary:        Tool to create and modify SUSE, Fedora, Red Hat Linux installation media
 License:        GPL-3.0+
 Group:          Hardware/Other
 URL:            https://github.com/openSUSE/mkmedia
-Obsoletes:      mkmedia < %{version}-%{release}
-Provides:       mkmedia = %{version}-%{release}
+Obsoletes:      mksusecd < %{version}-%{release}
+Provides:       mksusecd = %{version}-%{release}
 Source:         %{name}-%{version}.tar.xz
 BuildRequires:  pkgconfig(blkid)
 BuildRequires:  pkgconfig(json-c)
