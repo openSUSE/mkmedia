@@ -502,6 +502,8 @@ if($iso_backend eq "mkisofs" && ! (-x("/usr/bin/isoinfo") && -x("/usr/bin/mkisof
   die "mkisofs missing - install mkisofs package\n"
 }
 
+print "using $iso_backend for building\n";
+
 if($>) {
   if($opt_rebuild_initrd == 2) {
     die "mkmedia must be run with root permissions when --rebuild-initrd is used\n"
@@ -557,7 +559,7 @@ my $files_to_keep;
 my $boot;
 my $todo;
 my $iso_cnt = 0;
-my $mkisofs = { command => '/usr/bin/mkisofs' };
+my $mkisofs = { };
 my $iso_file;
 my $iso_fh;
 my $two_runs;
@@ -601,9 +603,6 @@ my $depmod;
 my $progress_start = 0;
 my $progress_end = 100;
 my $progress_txt = 'building:';
-
-$mkisofs->{command} = "/usr/bin/genisoimage" if ! -x $mkisofs->{command};
-die "mkisofs: command not found\n" if ! -x $mkisofs->{command};
 
 $mksquashfs_has_comp = check_mksquashfs_comp;
 $tagmedia_has_signature_tag = check_tagmedia_signature_tag;
@@ -1992,7 +1991,7 @@ sub run_iso_build_mkisofs
     }
   }
 
-  $cmd = "$mkisofs->{command}$mkisofs->{options}";
+  $cmd = "mkisofs $mkisofs->{options}";
 
   print "running:\n$cmd\n" if $opt_verbose >= 2;
 
@@ -2031,7 +2030,7 @@ sub run_iso_build_mkisofs
 
   print $log if $opt_verbose >= 3 || (!$ok && (!$joliet_msg || $opt_verbose >= 1));
 
-  die "Error: $mkisofs->{command} failed\n" . $joliet_msg if !$ok;
+  die "Error: mkisofs failed\n" . $joliet_msg if !$ok;
 }
 
 
@@ -2116,7 +2115,7 @@ sub run_iso_build_xorriso
 
   print $log if $opt_verbose >= 3 || (!$ok && (!$joliet_msg || $opt_verbose >= 1));
 
-  die "Error: $mkisofs->{command} failed\n" . $joliet_msg if !$ok;
+  die "Error: mkisofs failed\n" . $joliet_msg if !$ok;
 }
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
