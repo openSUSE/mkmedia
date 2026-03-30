@@ -7842,8 +7842,14 @@ sub apply_duds_1
     ($dud->{arch} = $1, $dud->{dist} = $2) if $dud->{dir} =~ m#/([^/-]+)-([^/-]+)$#;
   }
   elsif($os_release->{id} && $os_release->{version_id}) {
-    $dud->{dist} = $os_release->{id} . $os_release->{version_id};
-    $dud->{dist} = "tw" if $os_release->{id} eq "opensuse-tumbleweed";
+    # Tumbleweed and Slowroll use the date as version (e.g. '20261231').
+    # Since this changes too often, omit it.
+    if($os_release->{version_id} =~ /^[0-9]{8}$/) {
+      $dud->{dist} = $os_release->{id};
+    }
+    else {
+      $dud->{dist} = $os_release->{id} . $os_release->{version_id};
+    }
     $dud->{dir} = "/linux/suse/$dud->{arch}-$dud->{dist}";
   }
 
