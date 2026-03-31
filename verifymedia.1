@@ -1,0 +1,192 @@
+'\" t
+.\"     Title: verifymedia
+.\"    Author: [see the "AUTHOR(S)" section]
+.\" Generator: Asciidoctor 2.0.23
+.\"      Date: 2026-03-26
+.\"    Manual: User Commands
+.\"    Source: verifymedia 5.3
+.\"  Language: English
+.\"
+.TH "VERIFYMEDIA" "1" "2026-03-26" "verifymedia 5.3" "User Commands"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+verifymedia \- Verfiy SUSE installation or Live ISO images.
+.SH "SYNOPSIS"
+.sp
+\fBverifymedia\fP \fIISO\fP
+.SH "DESCRIPTION"
+.sp
+verifymedia checks SUSE bootable installation or Live media for technical correctness.
+.SS "General Options"
+.sp
+\fB\-\-ignore\fP=\fITOPIC\fP
+.RS 4
+Ignore specific test result. The test is still run but any failures are not counted.
+TOPIC is the test topic as shown in the test report.
+The option can be repeated to exclude several tests.
+.RE
+.sp
+\fB\-\-verbose\fP
+.RS 4
+Show more detailed messages. Can be repeated to log even more.
+.RE
+.sp
+\fB\-\-version\fP
+.RS 4
+Show verifymedia version.
+.RE
+.sp
+\fB\-\-mkisofs\fP
+.RS 4
+Use mkiosfs to build ISO images (default if available).
+.RE
+.sp
+\fB\-\-xorriso\fP
+.RS 4
+Use xorriso to build ISO images.
+.RE
+.sp
+\fB\-\-save\-temp\fP
+.RS 4
+Keep temporary files.
+.RE
+.sp
+\fB\-\-help\fP
+.RS 4
+Show this help text.
+.RE
+.SS "Default list of ignored tests"
+.sp
+The result of some tests is ignored by default \- making them optional checks:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+"UEFI boot image exists",
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+"ISO digest is md5",
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+"boot partition is EFI System Partition"
+.RE
+.SH "SEE ALSO"
+.sp
+\fBmkmedia\fP(1), \fBcheckmedia\fP(1), \fBtagmedia\fP(1).
+.SH "LINKS"
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+extensive usage summary: \c
+.URL "https://www.suse.com/c/make\-your\-own\-suse\-dvd\-tooling\-for\-suse\-and\-multi\-linux\-installation\-live\-media" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+the same, locally: \c
+.URL "file:///usr/share/doc/packages/mksusecd/suse_blog.html" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+more documentation: \c
+.URL "file:///usr/share/doc/packages/mksusecd" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+get latest version: \c
+.URL "https://github.com/openSUSE/mkmedia?tab=readme\-ov\-file#downloads" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+mkmedia web site: \c
+.URL "https://github.com/openSUSE/mkmedia" ""
+.br
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+openSUSE Build Service: \c
+.URL "https://build.opensuse.org" "" ""
+.RE

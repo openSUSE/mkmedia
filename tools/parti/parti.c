@@ -23,11 +23,15 @@ void help(void);
 struct option options[] = {
   { "help",        0, NULL, 'h'  },
   { "verbose",     0, NULL, 'v'  },
+  { "mkisofs",     0, NULL, 1006 },
+  { "xorriso",     0, NULL, 1007 },
   { "raw",         0, NULL, 1001 },
   { "version",     0, NULL, 1002 },
   { "export-disk", 1, NULL, 1003 },
   { "import-disk", 1, NULL, 1004 },
   { "json",        0, NULL, 1005 },
+  { "mkisofs",     0, NULL, 1006 },
+  { "xorriso",     0, NULL, 1007 },
   { }
 };
 
@@ -69,6 +73,14 @@ int main(int argc, char **argv)
         opt.json = 1;
         break;
 
+      case 1006:
+        opt.mkisofs = 1;
+        break;
+
+      case 1007:
+        opt.xorriso = 1;
+        break;
+
       default:
         help();
         return i == 'h' ? 0 : 1;
@@ -77,6 +89,15 @@ int main(int argc, char **argv)
 
   argc -= optind;
   argv += optind;
+
+  if(!opt.xorriso && !opt.mkisofs) {
+    if(access("/usr/bin/isoinfo", X_OK)) {
+      opt.mkisofs = 1;
+    }
+    else if(access("/usr/bin/xorriso", X_OK)) {
+      opt.xorriso = 1;
+    }
+  }
 
   while(*argv) disk_init(*argv++);
 
@@ -124,6 +145,8 @@ void help()
     "  --export-disk FILE  Export all relevant disk data to FILE. FILE can then be used\n"
     "                      with --import-disk to reproduce the results.\n"
     "  --import-disk FILE  Import relevant disk data from FILE.\n"
+    "  --mkisofs           Use isoinfo to read ISO9660 fs info (default).\n"
+    "  --xorriso           Use xorriso to read ISO9660 fs info.\n"
     "  --verbose           Report more details.\n"
     "  --version           Show version.\n"
     "  --help              Print this help text.\n"

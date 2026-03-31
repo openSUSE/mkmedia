@@ -39,7 +39,9 @@ typedef struct file_start_s {
 int fs_probe(fs_detail_t *fs, disk_t *disk, uint64_t offset);
 int fs_detail_fat(disk_t *disk, int indent, uint64_t sector);
 int fs_detail_iso9660(json_object *json_fs, disk_t *disk, int indent, uint64_t sector);
+void read_iso_detail(disk_t *disk);
 void read_isoinfo(disk_t *disk);
+void read_xorriso(disk_t *disk);
 
 file_start_t *iso_offsets = NULL;
 int iso_read = 0;
@@ -332,7 +334,7 @@ char *iso_block_to_name(disk_t *disk, unsigned block, unsigned *len)
   file_start_t *fs;
   char *name = NULL;
 
-  if(!iso_read) read_isoinfo(disk);
+  if(!iso_read) read_iso_detail(disk);
 
   for(fs = iso_offsets; fs; fs = fs->next) {
     if(block >= fs->block && block < fs->block + (((fs->len + 2047) >> 11) << 2)) break;
@@ -351,6 +353,17 @@ char *iso_block_to_name(disk_t *disk, unsigned block, unsigned *len)
   }
 
   return name;
+}
+
+
+void read_iso_detail(disk_t *disk)
+{
+  if(opt.xorriso) {
+    read_xorriso(disk);
+  }
+  else {
+    read_isoinfo(disk);
+  }
 }
 
 
@@ -419,6 +432,8 @@ void read_isoinfo(disk_t *disk)
 
   FILE *f = fdopen(tmp_fd, "r+");
 
+  // isoinfo reads 2 kiB blocks after each lseek
+
   unsigned current_block_size = disk->block_size;
   disk->block_size = 2048;
   unsigned char tmp_buffer[2048];
@@ -428,6 +443,77 @@ void read_isoinfo(disk_t *disk)
     if((s = strchr(line, '='))) {
       int64_t ofs = strtoll(s + 1, NULL, 10);
       disk_read(disk, tmp_buffer, ofs / 2048, 1);
+    }
+  }
+
+  free(line);
+
+  disk->block_size = current_block_size;
+}
+
+
+void read_xorriso(disk_t *disk)
+{
+  FILE *p;
+  char *cmd, *line = NULL, *dir = NULL;
+  size_t line_len = 0;
+  unsigned u1, u2;
+  file_start_t *fs;
+  fs_detail_t fs_detail;
+
+  iso_read = 1;
+
+  if(!fs_probe(&fs_detail, disk, 0)) return;
+
+  int tmp_fd = open("/tmp", O_TMPFILE | O_RDWR, S_IRUSR | S_IWUSR);
+
+  if(tmp_fd == -1) return;
+
+  int disk_fd = disk->fd;
+
+  if(disk_fd == -1) disk_fd = disk_to_fd(disk, 0);
+
+  if(disk_fd == -1) return;
+
+  asprintf(&cmd, "/usr/bin/strace -e lseek -o /proc/self/fd/%d /usr/bin/xorriso -indev /proc/self/fd/%d -find / -exec report_lba 2>/dev/null", tmp_fd, disk_fd);
+
+  if((p = popen(cmd, "r"))) {
+    while(getline(&line, &line_len, p) != -1) {
+      char *s, *line_start = line;
+
+      if(sscanf(line_start, "File data lba: %*u , %u , %*u , %u , '%m[^\n]", &u1, &u2, &s) == 3) {
+        fs = calloc(1, sizeof *fs);
+        fs->next = iso_offsets;
+        iso_offsets = fs;
+        fs->block = u1 << 2;
+        fs->len = u2;
+        size_t s_len = strlen(s);
+        if(s_len > 0) s[s_len - 1] = 0;
+        fs->name = s;
+      }
+    }
+
+    pclose(p);
+  }
+
+  free(cmd);
+  free(dir);
+
+  if(disk->fd == -1) close(disk_fd);
+
+  FILE *f = fdopen(tmp_fd, "r+");
+
+  // xorriso reads 64 kiB blocks after each lseek
+
+  unsigned current_block_size = disk->block_size;
+  disk->block_size = 2048;
+  unsigned char tmp_buffer[2048 * 32];
+
+  while(getline(&line, &line_len, f) != -1) {
+    char *s;
+    if((s = strchr(line, '='))) {
+      int64_t ofs = strtoll(s + 1, NULL, 10);
+      disk_read(disk, tmp_buffer, ofs / 2048, 32);
     }
   }
 

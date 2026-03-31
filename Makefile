@@ -6,7 +6,6 @@ GIT2LOG	:= $(shell if [ -x ./git2log ] ; then echo ./git2log --update ; else ech
 GITDEPS	:= $(shell [ -d .git ] && echo .git/HEAD .git/refs/heads .git/refs/tags)
 VERSION	:= $(shell $(GIT2LOG) --version VERSION ; cat VERSION)
 BRANCH	:= $(shell [ -d .git ] && git branch | perl -ne 'print $$_ if s/^\*\s*//')
-PREFIX	:= mksusecd-$(VERSION)
 BINDIR	 = /usr/bin
 LIBDIR	 = /usr/lib
 
@@ -18,12 +17,9 @@ isohybrid:
 parti:
 	@make -C tools/parti
 
-archive: changelog
-	@if [ ! -d .git ] ; then echo no git repo ; false ; fi
-	mkdir -p package
-	git archive --prefix=$(PREFIX)/ $(BRANCH) > package/$(PREFIX).tar
-	tar -r -f package/$(PREFIX).tar --mode=0664 --owner=root --group=root --mtime="`git show -s --format=%ci`" --transform='s:^:$(PREFIX)/:' VERSION changelog
-	xz -f package/$(PREFIX).tar
+# make_package is in package linuxrc-devtools
+archive:
+	@make_package
 
 changelog: $(GITDEPS)
 	$(GIT2LOG) --changelog changelog
@@ -53,8 +49,6 @@ install: isohybrid parti doc
 %.1: %_man.adoc
 	@if [ -x /usr/bin/asciidoctor ] ; then \
 	  asciidoctor -b manpage -a version=$(VERSION) $< ; \
-	else \
-	  a2x -f manpage -a version=$(VERSION) $< ; \
 	fi
 
 doc: mkmedia.1 mksusecd.1 verifymedia.1
@@ -68,5 +62,5 @@ doc: mkmedia.1 mksusecd.1 verifymedia.1
 clean:
 	@make -C tools/isohybrid clean
 	@make -C tools/parti clean
-	@rm -f *.o *~ *.tmp */*~ mkmedia{.1,_man.xml,_man.pdf} verifymedia{.1,_man.xml,_man.pdf} suse_blog.html mksusecd.1
+	@rm -f *.o *~ *.tmp */*~ mkmedia{_man.xml,_man.pdf} verifymedia{_man.xml,_man.pdf}
 	@rm -rf package
