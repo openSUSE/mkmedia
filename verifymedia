@@ -1356,6 +1356,7 @@ sub get_arch
 
   for my $x ('aarch64', 's390x', 'x86_64', 'i386', 'ppc64', 'ppc64le', 'riscv64', 'loongarch64') {
     return $x if is_dir("boot/$x");
+    return 'i386' if is_dir("boot/ix86");
     return $x if exists($efi_archs->{$x}) && is_file(file_name_nocase("efi/boot/boot$efi_archs->{$x}.efi"));
   }
 
@@ -1413,7 +1414,12 @@ sub get_expected_suse_media_layout
   return unless $arch;
 
   my $base = "boot/$arch";
-  $base = "boot/$arch/loader" if is_dir("boot/$arch/loader");
+
+  if($arch eq 'i386') {
+    $base = "boot/ix86" if is_dir("boot/ix86") && !is_dir("boot/$arch")
+  }
+
+  $base = "$base/loader" if is_dir("$base/loader");
 
   if($media->{variant} eq 'install') {
     if($arch eq 'aarch64') {
@@ -1501,6 +1507,21 @@ sub get_expected_suse_media_layout
       $media->{hybrid_mode} = 'efi';
       $media->{eltorito_efi} = 1;
     }
+    elsif($arch eq 'i386') {
+      $media->{grub_cfg} = "boot/grub2/grub.cfg";
+      $media->{grub_earlyboot_cfg} = "boot/grub2/earlyboot.cfg";
+      $media->{el_torito_image} = "$base/eltorito.img";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
+      $media->{efi_loader} = "EFI/BOOT/bootia32.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      chomp(my $id = read_file "boot/mbrid");
+      $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_legacy} = 1;
+      $media->{eltorito_efi} = 1;
+    }
     elsif($arch eq 'loongarch64') {
       $media->{grub_cfg} = "boot/grub2/grub.cfg";
       $media->{initrd} = "$base/initrd";
@@ -1571,6 +1592,21 @@ sub get_expected_suse_media_layout
       chomp(my $id = read_file "boot/mbrid");
       $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
       $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_efi} = 1;
+    }
+    elsif($arch eq 'i386') {
+      $media->{grub_cfg} = "boot/grub2/grub.cfg";
+      $media->{grub_earlyboot_cfg} = "boot/grub2/earlyboot.cfg";
+      $media->{el_torito_image} = "$base/eltorito.img";
+      $media->{initrd} = "$base/initrd";
+      $media->{kernel} = "$base/linux";
+      $media->{efi_image} = "$base/efiboot.img";
+      $media->{efi_loader} = "EFI/BOOT/bootia32.efi";
+      $media->{efi_grub_cfg} = "EFI/BOOT/grub.cfg";
+      chomp(my $id = read_file "boot/mbrid");
+      $media->{grub_search_id} = "/boot/$id" if is_file "boot/$id";
+      $media->{hybrid_mode} = 'efi';
+      $media->{eltorito_legacy} = 1;
       $media->{eltorito_efi} = 1;
     }
     elsif($arch eq 'loongarch64') {
